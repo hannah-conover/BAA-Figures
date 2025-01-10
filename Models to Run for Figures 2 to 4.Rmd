@@ -1,0 +1,61 @@
+---
+title: "Model Setup"
+output: html_document
+date: "2025-01-10"
+---
+## Library Loading
+```{r setup, include=FALSE}
+options(packrat.dependency.discovery.renv = TRUE)
+require(ggplot2)
+require(ggthemes)
+require(plyr)
+require(stargazer)
+require(RColorBrewer)
+require(scales)
+require(gtable)
+require(gridExtra)
+require(data.table)
+require(dplyr)
+require(ggplot2)
+require(readr)
+require(tidyr)
+require(lme4)
+require(MASS)
+library(daewr)
+library(MASS)
+library(GAD)
+library(dplyr)
+library(sjPlot)
+library(blmeco)
+```
+
+```{r}
+library(stringr)
+dswithrepAbbECM <- X3DPdswithrep %>% mutate(across('Abb_ECMs', str_replace, ':|: ', ''))
+```
+
+## Proliferation Model
+```{r}
+dswithrepAbbECM$CollagenI <- relevel(as.factor(dswithrepAbbECM$CollagenI), ref = 5)
+dswithrepAbbECM$CollagenIV <- relevel(as.factor(dswithrepAbbECM$CollagenIV), ref = 5)
+dswithrepAbbECM$Hyaluronic_Acid <- relevel(as.factor(dswithrepAbbECM$Hyaluronic_Acid), ref = 5)
+dswithrepAbbECM$TenascinC <- relevel(as.factor(dswithrepAbbECM$TenascinC), ref = 5)
+dswithrepAbbECM$Laminin <- relevel(as.factor(dswithrepAbbECM$Laminin), ref = 5)
+dswithrepAbbECM$Fibronectin <- relevel(as.factor(dswithrepAbbECM$Fibronectin), ref = 5)
+dswithrepAbbECM$Galectin3 <- relevel(as.factor(dswithrepAbbECM$Galectin3), ref = 5)
+dswithrepAbbECM$Osteopontin <- relevel(as.factor(dswithrepAbbECM$Osteopontin), ref = 5)
+dswithrepAbbECM$Decorin <- relevel(as.factor(dswithrepAbbECM$Decorin), ref = 5)
+
+EdUmodel <- glmer(round(Mean_Percent_Positive) ~ 
+                 (1|(Metadata_Stiffness:Metadata_Treatment):Metadata_Experiment:Metadata_Block:Replicate) +
+                Metadata_Stiffness+ Metadata_Treatment + CollagenI + CollagenIV + Hyaluronic_Acid + TenascinC + Laminin + Fibronectin + Galectin3 + Osteopontin + Decorin + Abb_ECMs +
+                 Metadata_Stiffness:Metadata_Treatment + Metadata_Stiffness:(CollagenI + CollagenIV + Hyaluronic_Acid + TenascinC + Laminin + Fibronectin + Galectin3 + Osteopontin + Decorin)+ Metadata_Stiffness:Abb_ECMs +  Metadata_Treatment:Abb_ECMs + Metadata_Treatment:(CollagenI + CollagenIV + Hyaluronic_Acid + TenascinC + Laminin + Fibronectin + Galectin3 + Osteopontin + Decorin) + Abb_ECMs:(CollagenI + CollagenIV + Hyaluronic_Acid + TenascinC + Laminin + Fibronectin + Galectin3 + Osteopontin + Decorin) + Metadata_Stiffness:Metadata_Treatment:Abb_ECMs + Metadata_Stiffness:Metadata_Treatment:(CollagenI + CollagenIV + Hyaluronic_Acid + TenascinC + Laminin + Fibronectin + Galectin3 + Osteopontin + Decorin)+
+                 Metadata_Stiffness:Abb_ECMs:(CollagenI + CollagenIV + Hyaluronic_Acid + TenascinC + Laminin + Fibronectin + Galectin3 + Osteopontin + Decorin) + Metadata_Treatment:Abb_ECMs:(CollagenI + CollagenIV + Hyaluronic_Acid + TenascinC + Laminin + Fibronectin + Galectin3 + Osteopontin + Decorin), dswithrepAbbECM, 
+               family = "poisson")
+
+dispersion_glmer(EdUmodel)
+anova(EdUmodel)
+```
+
+
+
