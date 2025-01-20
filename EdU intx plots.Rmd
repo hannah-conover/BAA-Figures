@@ -1,0 +1,357 @@
+---
+title: "Graphs"
+output: html_document
+date: "2025-01-14"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r setup, include=FALSE}
+options(packrat.dependency.discovery.renv = TRUE)
+require(ggplot2)
+require(ggthemes)
+#require(plyr)
+require(stargazer)
+require(RColorBrewer)
+require(scales)
+require(gtable)
+require(gridExtra)
+require(data.table)
+require(dplyr)
+require(ggplot2)
+require(readr)
+require(tidyr)
+require(lme4)
+require(MASS)
+library(daewr)
+library(MASS)
+library(GAD)
+library(dplyr)
+library(sjPlot)
+library(blmeco)
+```
+
+```{r}
+dswithrepAbbECM$CollagenI <- relevel(factor(dswithrepAbbECM$CollagenI, levels = c(0, 0.25, 0.5, 0.75, 1)), ref = 1)
+dswithrepAbbECM$CollagenIV <- relevel(factor(dswithrepAbbECM$CollagenIV, levels = c(0, 0.25, 0.5, 0.75, 1)), ref = 1)
+dswithrepAbbECM$Hyaluronic_Acid <- relevel(factor(dswithrepAbbECM$Hyaluronic_Acid, levels = c(0, 0.25, 0.5, 0.75, 1)), ref = 1)
+dswithrepAbbECM$TenascinC <- relevel(factor(dswithrepAbbECM$TenascinC, levels = c(0, 0.25, 0.5, 0.75, 1)), ref = 1)
+dswithrepAbbECM$Laminin <- relevel(factor(dswithrepAbbECM$Laminin, levels = c(0, 0.25, 0.5, 0.75, 1)), ref = 1)
+dswithrepAbbECM$Fibronectin <- relevel(factor(dswithrepAbbECM$Fibronectin, levels = c(0, 0.25, 0.5, 0.75, 1)), ref = 1)
+dswithrepAbbECM$Galectin3 <- relevel(factor(dswithrepAbbECM$Galectin3, levels = c(0, 0.25, 0.5, 0.75, 1)), ref = 1)
+dswithrepAbbECM$Osteopontin <- relevel(factor(dswithrepAbbECM$Osteopontin, levels = c(0, 0.25, 0.5, 0.75, 1)), ref = 1)
+dswithrepAbbECM$Decorin <- relevel(factor(dswithrepAbbECM$Decorin, levels = c(0, 0.25, 0.5, 0.75, 1)), ref = 1)
+
+dswithrepAbbECM$Metadata_Treatment[dswithrepAbbECM$Metadata_Treatment == "LD"] <- "10 uM"
+dswithrepAbbECM$Metadata_Treatment[dswithrepAbbECM$Metadata_Treatment == "HD"] <- "20 uM"
+
+dswithrepAbbECM$Metadata_Treatment <- factor(dswithrepAbbECM$Metadata_Treatment, levels = c("DMSO", "10 uM", "20 uM"))
+```
+
+
+### EdU Findings
+```{r}
+EdUECMmeansNuc <- dswithrepAbbECM  %>% group_by(Metadata_Stiffness, Abb_ECMs, Laminin, CollagenI, CollagenIV, Hyaluronic_Acid, Fibronectin, Decorin, Osteopontin, Galectin3, TenascinC, Metadata_Treatment) %>% summarize(Percent_Positive = mean(Mean_Percent_Positive, na.rm = TRUE), Mean_Nuclei = mean(Mean_Nuclei, na.rm = TRUE), SEM = sd(Mean_Percent_Positive)/sqrt(length(Mean_Percent_Positive)), .groups = "drop")
+```
+#### Significant S:R
+Lam
+```{r}
+interaction.plot(dswithrepAbbECM$Laminin, dswithrepAbbECM$Metadata_Stiffness, response = dswithrepAbbECM$Mean_Percent_Positive, xlab = "Ratio of Laminin", ylab = "Mean % EdU Positive", trace.label = "Stiffness")
+
+library(ggprism)
+
+EdUECMmeansNuc %>% group_by(Metadata_Stiffness, Laminin) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Laminin, y = Percent_Positive, col = Metadata_Stiffness))+
+  #facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = Metadata_Stiffness), linewidth = 1.5)+
+  geom_point()+
+  theme_prism(border = TRUE)+
+  xlab("Ratio of Laminin")+
+  ylab("% Positive EdU")+
+  scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" 
+)) +
+  ylab("% EdU Positive")
+  ggsave("StiffnessvsLamEdU.png")
+```
+
+
+
+#### Significant T:E
+```{r}
+interaction.plot(dswithrepAbbECM$Abb_ECMs, dswithrepAbbECM$Metadata_Treatment, response = dswithrepAbbECM$Mean_Percent_Positive, xlab = "ECM Composition", ylab = "Mean % EdU Positive", trace.label = "Treatment")
+
+EdUECMmeansNuc %>% group_by(Metadata_Treatment, Abb_ECMs) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Abb_ECMs, y = Percent_Positive, col = Metadata_Treatment))+
+  #facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = Metadata_Treatment), linewidth = 1.5)+
+  geom_point()+
+  theme_prism(border = TRUE)+
+  xlab("ECM Composition")+
+  ylab("% Positive EdU")+
+  scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" 
+)) +
+  ylab("% EdU Positive")+
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+#### Significant T:R
+LN, OPN
+```{r}
+interaction.plot(dswithrepAbbECM$Laminin, dswithrepAbbECM$Metadata_Treatment, response = dswithrepAbbECM$Mean_Percent_Positive, xlab = "Ratio of Laminin", ylab = "Mean % EdU Positive")
+
+interaction.plot(dswithrepAbbECM$Osteopontin, dswithrepAbbECM$Metadata_Treatment, response = dswithrepAbbECM$Mean_Percent_Positive, xlab = "Ratio of Osteopontin", ylab = "Mean % EdU Positive", trace.label = "Treatment")
+
+EdUECMmeansNuc %>% group_by(Metadata_Treatment, Laminin) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Laminin, y = Percent_Positive, col = Metadata_Treatment))+
+  #facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = Metadata_Treatment), linewidth = 1.5)+
+  geom_point()+
+  theme_prism(border = TRUE)+
+  xlab("Ratio of Laminin")+
+  ylab("% Positive EdU")+
+  scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" 
+)) +
+  ylab("% EdU Positive")
+
+EdUECMmeansNuc %>% group_by(Metadata_Treatment, Osteopontin) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Osteopontin, y = Percent_Positive, col = Metadata_Treatment))+
+  #facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = Metadata_Treatment), linewidth = 1.5)+
+  geom_point()+
+  theme_prism(border = TRUE)+
+  xlab("Ratio of Osteopontin")+
+  ylab("% Positive EdU")+
+  scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" 
+)) +
+  ylab("% EdU Positive")
+```
+
+
+#### Significant R:E
+C1, HA, G3
+```{r}
+# dswithrepAbbECM %>% filter(CollagenI != 0) %>% interaction.plot(Abb_ECM, CollagenI, response = Mean_Percent_Positive, xlab = "ECM Condition", ylab = "Mean % EdU Positive")
+# 
+# dswithrepAbbECM %>% filter(Hyaluronic_Acid != 0) %>% interaction.plot(Abb_ECM, Hyaluronic_Acid, response = Mean_Percent_Positive, xlab = "ECM Condition", ylab = "Mean % EdU Positive")
+# 
+# dswithrepAbbECM %>% filter(Galectin3 != 0) %>% interaction.plot(Abb_ECM, Galectin3, response = Mean_Percent_Positive, xlab = "ECM Condition", ylab = "Mean % EdU Positive")
+
+EdUECMmeansNuc %>% filter(CollagenI != 0) %>% group_by(Abb_ECMs, CollagenI) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Abb_ECMs, y = Percent_Positive, col = CollagenI))+
+  #facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = CollagenI), linewidth = 1.5)+
+  geom_point()+
+  theme_prism(border = TRUE)+
+  xlab("ECM Composition")+
+  ylab("% Positive EdU")+
+  labs(color = "Collagen I")+
+  scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" 
+)) +
+  ylab("% EdU Positive")
+ggsave("CollagenIRatiovsECMEdU.png")
+
+EdUECMmeansNuc %>% filter(Hyaluronic_Acid != 0) %>% group_by(Abb_ECMs, Hyaluronic_Acid) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Abb_ECMs, y = Percent_Positive, col = Hyaluronic_Acid))+
+  #facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = Hyaluronic_Acid), linewidth = 1.5)+
+  geom_point()+
+  theme_prism(border = TRUE)+
+  xlab("ECM Composition")+
+  ylab("% Positive EdU")+
+  scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" 
+)) +
+  ylab("% EdU Positive")
+
+EdUECMmeansNuc %>% filter(Galectin3 != 0) %>% group_by(Abb_ECMs, Galectin3) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Abb_ECMs, y = Percent_Positive, col = Galectin3))+
+  #facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = Galectin3), linewidth = 1.5)+
+  geom_point()+
+  theme_prism(border = TRUE)+
+  xlab("ECM Composition")+
+  ylab("% Positive EdU")+
+  scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" 
+)) +
+  ylab("% EdU Positive")
+```
+
+
+
+#### Significant Stiffness:Treatment:Raio
+LN, G3
+
+```{r}
+# dswithrepAbbECM %>% filter(Metadata_Stiffness == "1kPa") %>% interaction.plot(Laminin, Metadata_Treatment, response = Mean_Percent_Positive, xlab = "Ratio of Laminin", ylab = "Mean % EdU Positive", trace.label = "Treatment")
+# 
+# dswithrepAbbECM %>% filter(Metadata_Stiffness == "25kPa") %>% interaction.plot(Laminin, Metadata_Treatment, response = Mean_Percent_Positive, xlab = "Ratio of Laminin", ylab = "Mean % EdU Positive", trace.label = "Treatment")
+# 
+# dswithrepAbbECM %>% filter(Metadata_Stiffness == "1kPa") %>% interaction.plot(Galectin3, Metadata_Treatment, response = Mean_Percent_Positive, xlab = "Ratio of Galectin 3", ylab = "Mean % EdU Positive", trace.label = "Treatment")
+# 
+# dswithrepAbbECM %>% filter(Metadata_Stiffness == "25kPa") %>% interaction.plot(Galectin3, Metadata_Treatment, response = Mean_Percent_Positive, xlab = "Ratio of Galectin 3", ylab = "Mean % EdU Positive", trace.label = "Treatment")
+
+EdUECMmeansNuc %>% group_by(Metadata_Treatment, Laminin, Metadata_Stiffness) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Laminin, y = Percent_Positive, col = Metadata_Treatment))+
+  facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = Metadata_Treatment), linewidth = 1.5)+
+  geom_point()+
+  theme_prism(border = TRUE)+
+  xlab("Ratio of Laminin")+
+  ylab("% Positive EdU")+
+  scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" 
+)) +
+  ylab("% EdU Positive")
+
+EdUECMmeansNuc %>% group_by(Metadata_Treatment, Galectin3, Metadata_Stiffness) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Galectin3, y = Percent_Positive, col = Metadata_Treatment))+
+  facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = Metadata_Treatment), linewidth = 1.5)+
+  geom_point()+
+  theme_prism(border = TRUE)+
+  xlab("Ratio of Galectin3")+
+  ylab("% Positive EdU")+
+  scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" 
+)) +
+  ylab("% EdU Positive")
+```
+
+#### Significant Treatment:Ratio:ECMs
+C1, C4, HA, TC, FN
+
+would be really crowded and not interpretable... Choose a couple examples
+```{r}
+dswithrepAbbECM %>% filter(CollagenI != 0) %>% interaction.plot(Abb_ECM, CollagenI, response = Mean_Percent_Positive, xlab = "ECM Condition", ylab = "Mean % EdU Positive")
+```
+
+```{r}
+library(ggpubr)
+
+C1TEsig <- compare_means(Mean_Percent_Positive ~ CollagenI, subset(dswithrepAbbECM, CollagenI != 0), group.by = c("Metadata_Treatment", "Abb_ECMs"))
+
+C4TEsig <- compare_means(Mean_Percent_Positive ~ CollagenIV, subset(dswithrepAbbECM, CollagenIV != 0), group.by = c("Metadata_Treatment", "Abb_ECMs"))
+
+HATEsig <-compare_means(Mean_Percent_Positive ~ Hyaluronic_Acid,subset(dswithrepAbbECM, Hyaluronic_Acid != 0), group.by = c("Metadata_Treatment", "Abb_ECMs"))
+
+TCTEsig <-compare_means(Mean_Percent_Positive ~ TenascinC,subset(dswithrepAbbECM, TenascinC != 0), group.by = c("Metadata_Treatment", "Abb_ECMs"))
+
+FNTEsig <-compare_means(Mean_Percent_Positive ~ Fibronectin, subset(dswithrepAbbECM, Fibronectin != 0),group.by = c("Metadata_Treatment", "Abb_ECMs"))
+```
+
+##### Boxplot TCHA & C1HA
+
+```{r}
+dswithrepAbbECM$Metadata_Treatment[dswithrepAbbECM$Metadata_Treatment == "LD"] <- "10 uM"
+dswithrepAbbECM$Metadata_Treatment[dswithrepAbbECM$Metadata_Treatment == "HD"] <- "20 uM"
+
+dswithrepAbbECM$Metadata_Treatment <- factor(dswithrepAbbECM$Metadata_Treatment, levels = c("DMSO", "10 uM", "20 uM"))
+
+ratiocomparisons <- list(c("0.25", "0.5"), c("0.25","0.75"),c("0.5", "0.75"))
+
+dswithrepAbbECM %>% filter(Abb_ECMs == "TCHA") %>% ggplot(aes(x = TenascinC, y = Mean_Percent_Positive))  +
+  facet_grid(cols = vars(Metadata_Treatment)) +
+  geom_boxplot()+
+  stat_compare_means(comparisons = ratiocomparisons, label = "p.signif")+
+  theme_prism()+
+  xlab("Ratio of Tenascin C")+
+  ylab("Mean % EdU Positive") +
+  ggtitle("TC:HA ECM Combinations") 
+
+
+ EdUECMmeansNuc %>% filter(Abb_ECMs == "TCHA") %>% group_by(Metadata_Treatment, TenascinC) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Metadata_Treatment, y = Percent_Positive, col = TenascinC))+
+ # facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = TenascinC), linewidth = 1.5)+
+  geom_point()+
+  theme_prism(border = TRUE)+
+  xlab("Treatment")+
+  ylab("% Positive EdU")+
+   
+  scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" 
+)) +
+   ggtitle("TC:HA ECM Combinations")
+ 
+ EdUECMmeansNuc %>% filter(Abb_ECMs == "C1HA") %>% group_by(Metadata_Treatment, CollagenI) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Metadata_Treatment, y = Percent_Positive, col = CollagenI))+
+ # facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = CollagenI), linewidth = 1.5)+
+  geom_point()+
+  theme_prism(border = TRUE)+
+  xlab("Treatment")+
+  ylab("% Positive EdU")+
+   
+  scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" 
+)) +
+   ggtitle("C1:HA ECM Combinations")
+
+```
+
+## Treatment Box
+```{r}
+treatmentcomp <- list(c("DMSO", "10 uM"), c("DMSO", "20 uM"), c("10 uM", "20 uM"))
+dswithrepAbbECM %>% ggplot(aes(Metadata_Treatment, Mean_Percent_Positive)) +
+  geom_boxplot()+
+  theme_prism()+
+  stat_compare_means(comparisons = treatmentcomp)
+
+dswithrepAbbECM %>% ggplot(aes(Metadata_Stiffness, Mean_Percent_Positive)) +
+  geom_boxplot()+
+  theme_prism()+
+  stat_compare_means()
+
+treatmentcomp <- list(c("DMSO", "10 uM"), c("DMSO", "20 uM"), c("10 uM", "20 uM"))
+dswithrepAbbECM %>% ggplot(aes(Metadata_Treatment, Mean_Percent_Positive, color = Metadata_Stiffness)) +
+  geom_boxplot()+
+  theme_prism()+
+  stat_compare_means()
+```
+
+```{r}
+EdUECMmeansNuc %>% group_by(Metadata_Treatment, Metadata_Stiffness) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Metadata_Treatment, y = Percent_Positive, col = Metadata_Stiffness))+
+ # facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = Metadata_Stiffness), linewidth = 1.5)+
+  geom_point()+
+  theme_prism(border = TRUE)+
+  xlab("Treatment")+
+  ylab("% Positive EdU")+
+   
+  scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" ))
+
+```
+## Need to  Figure out Survival
+```{r}
+FOCsumm <- FOC %>% group_by(Abb_ECMs, Metadata_Stiffness, Metadata_Treatment, CollagenI,CollagenIV, Laminin, Hyaluronic_Acid,   TenascinC, Osteopontin, Galectin3, Fibronectin, Decorin, Conditions)%>% summarize(FOC = mean(FOC), ControlMean = mean(ControlMean))
+```
+"C1:DN"  "C1:HA"  "C4:FN"  "C4:G3"  "C4:LN"  "C4:OPN" "G3:FN"  "HA:DN"  "HA:FN"  "LN:DN"  "LN:FN"  "LN:G3"  "OPN:G3" Maintained
+
+```{r}
+FOCDecreased <- subset(FOCsumm, FOC < 0.25)
+FOCMaintained <- subset(FOCsumm, 0.75<FOC & FOC<1.25)
+
+FOCMaintained <- subset(FOCMaintained, Metadata_Treatment != "DMSO")
+
+
+hist(subset(FOCsumm, Metadata_Treatment != "DMSO")$FOC, breaks = 30)
+
+```
+
+```{r}
+library(ggprism)
+FOCsumm %>% filter(Metadata_Treatment != "DMSO") %>% ggplot(aes(ControlMean, FOC, color = Conditions)) + 
+  facet_grid(cols = vars(Metadata_Treatment), rows = vars(Metadata_Stiffness))+
+  geom_point()+
+  theme_prism() +
+  theme(legend.position = "none")
+  
+```
+"C1:DN"  "C1:HA"  "C4:FN"  "C4:G3"  "C4:LN"  "C4:OPN" "G3:FN"  "HA:DN"  "HA:FN"  "LN:DN"  "LN:FN"  "LN:G3"  "OPN:G3" Maintained
+
+```{r}
+FOCDecreased1 <- FOCDecreased %>% filter(Metadata_Stiffness == "1kPa")
+FOCDecreased25 <- FOCDecreased %>% filter(Metadata_Stiffness == "25kPa")
+```
+
+```{r}
+ECMcomp<- ggpubr::compare_means(Mean_Nuclei ~ Metadata_Ratio, dswithrepAbbECM, group.by = c("Metadata_Treatment", "Abb_ECMs") )
+
+Treatcomp <- ggpubr::compare_means(Mean_Nuclei ~ Metadata_Treatment, subset(dswithrepAbbECM, Metadata_Treatment != "DMSO"), group.by = "Conditions" )
+
+FOCTreatcomp <- compare_means(FOC ~ Metadata_Treatment, subset(FOC, Metadata_Treatment != "DMSO"), group.by = "Conditions")
+```
+
+```{r}
+library(ggpubr)
+dswithrepAbbECM %>% filter(Metadata_Treatment == "LD") %>% filter(Abb_ECMs == "HAG3") %>% ggplot(aes(Metadata_Ratio, Mean_Nuclei)) + 
+  geom_boxplot()+
+  theme_prism()+
+  stat_compare_means(comparisons = list(c("25/75", "50/50"), c("25/75", "75/25"), c("75/25", "50/50")), label = "p.signif")
+```
+

@@ -1,0 +1,160 @@
+---
+title: "Survival Plots"
+output: html_document
+date: "2025-01-15"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup, include=FALSE}
+options(packrat.dependency.discovery.renv = TRUE)
+require(ggplot2)
+require(ggthemes)
+#require(plyr)
+require(stargazer)
+require(RColorBrewer)
+require(scales)
+require(gtable)
+require(gridExtra)
+require(data.table)
+require(dplyr)
+require(ggplot2)
+require(readr)
+require(tidyr)
+require(lme4)
+require(MASS)
+library(daewr)
+library(MASS)
+library(GAD)
+library(dplyr)
+library(sjPlot)
+library(blmeco)
+```
+
+```{r}
+dswithrepAbbECM$Metadata_Treatment[dswithrepAbbECM$Metadata_Treatment == "LD"] <- "10 uM"
+dswithrepAbbECM$Metadata_Treatment[dswithrepAbbECM$Metadata_Treatment == "HD"] <- "20 uM"
+
+dswithrepAbbECM$Metadata_Treatment <- factor(dswithrepAbbECM$Metadata_Treatment, levels = c("DMSO", "10 uM", "20 uM"))
+```
+
+## Treatment and Stiffness
+```{r}
+treatmentcomp <- list(c("DMSO", "10 uM"), c("DMSO", "20 uM"), c("10 uM", "20 uM"))
+dswithrepAbbECM %>% ggplot(aes(Metadata_Treatment, Mean_Nuclei)) +
+  geom_boxplot()+
+  theme_prism()+
+  stat_compare_means(comparisons = treatmentcomp, label = "p.signif")
+
+dswithrepAbbECM %>% ggplot(aes(Metadata_Stiffness, Mean_Nuclei)) +
+  facet_grid(cols = vars(Metadata_Treatment))+
+  geom_boxplot()+
+  theme_prism()+
+  xlab("Stiffness")+
+  ylab("Average Adhesion")+
+  stat_compare_means(comparisons = list(c("1kPa", "25kPa")), label = "p.signif")
+ggsave("StiffnessbyTreatmentinSur.png")
+```
+
+```{r}
+dswithrepAbbECM %>% group_by(Metadata_Stiffness, Metadata_Treatment) %>% summarize(Mean_Nuclei = mean(Mean_Nuclei)) %>%ggplot( aes(x = Metadata_Treatment, y = Mean_Nuclei, col = Metadata_Stiffness))+
+  #facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = Metadata_Stiffness), linewidth = 1.5)+
+  geom_point()+
+  theme_prism(border = TRUE)+
+  xlab("Sorafenib Treatment")+
+  ylab("Average Cell Number")+
+  scale_color_manual(values  = c("darkorange", "blue" ))
+```
+
+```{r}
+FOC %>% filter(Metadata_Treatment != "DMSO") %>% group_by(Condition, Metadata_Treatment, Metadata_Stiffness)%>% summarize(ControlMean = mean(ControlMean), FOC = mean(FOC)) %>% ggplot(aes(ControlMean, FOC, color = Condition))+
+  facet_grid(cols = vars(Metadata_Treatment), rows = vars(Metadata_Stiffness)) + 
+  geom_point()+
+  ylab("Drug/DMSO Control (Survival)")+
+  xlab("Cell Number DMSO Control")+
+  theme_prism(border = TRUE)+
+  geom_hline(yintercept = 1)+
+  geom_hline(yintercept = 0.5)+
+  theme(legend.position = "none")
+ggsave("FOCScatter.png", dpi = 1200)
+
+FOC %>% filter(Metadata_Treatment != "DMSO")%>% group_by(Condition, Metadata_Treatment, Metadata_Stiffness)%>% summarize(ControlMean = mean(ControlMean), FOC = mean(FOC)) %>% ggplot(aes(ControlMean, FOC, color = Condition))+
+  facet_grid(cols = vars(Metadata_Treatment), rows = vars(Metadata_Stiffness)) + 
+  geom_point()+
+  scale_y_log10()+
+  ylab("Drug/DMSO Control (Survival)")+
+  xlab("Cell Number DMSO Control")+
+  theme_classic()+
+  geom_hline(yintercept = 1)+
+  geom_hline(yintercept = 0.5)+
+  theme(legend.position = "none")
+ggsave("FOCScatterlog.png", dpi = 1200)
+```
+## 10 uM over both stiffnesses
+```{r}
+FOCsumm %>%filter(Metadata_Stiffness == "1kPa")%>% filter(Metadata_Treatment == "10 uM")%>% filter(FOC < 0.5)%>% nrow()
+
+FOCsumm %>% filter(Metadata_Stiffness == "1kPa")%>% filter(Metadata_Treatment == "10 uM")%>% filter(FOC > 0.5 & FOC < 1)%>% nrow()
+
+FOCsumm %>% filter(Metadata_Stiffness == "1kPa")%>% filter(Metadata_Treatment == "10 uM")%>% filter(FOC > 1)%>% nrow()
+
+FOCsumm %>%filter(Metadata_Stiffness == "25kPa")%>% filter(Metadata_Treatment == "10 uM")%>% filter(FOC < 0.5)%>% nrow()
+
+FOCsumm %>% filter(Metadata_Stiffness == "25kPa")%>% filter(Metadata_Treatment == "10 uM")%>% filter(FOC > 0.5 & FOC < 1)%>% nrow()
+
+FOCsumm %>% filter(Metadata_Stiffness == "25kPa")%>% filter(Metadata_Treatment == "10 uM")%>% filter(FOC > 1)%>% nrow()
+```
+
+## 20 uM over both stiffnesses
+```{r}
+FOCsumm %>%filter(Metadata_Stiffness == "1kPa")%>% filter(Metadata_Treatment == "20 uM")%>% filter(FOC < 0.5)%>% nrow()
+
+FOCsumm %>% filter(Metadata_Stiffness == "1kPa")%>% filter(Metadata_Treatment == "20 uM")%>% filter(FOC > 0.5 & FOC < 1)%>% nrow()
+
+FOCsumm %>% filter(Metadata_Stiffness == "1kPa")%>% filter(Metadata_Treatment == "20 uM")%>% filter(FOC > 1)%>% nrow()
+
+FOCsumm %>%filter(Metadata_Stiffness == "25kPa")%>% filter(Metadata_Treatment == "20 uM")%>% filter(FOC < 0.5)%>% nrow()
+
+FOCsumm %>% filter(Metadata_Stiffness == "25kPa")%>% filter(Metadata_Treatment == "20 uM")%>% filter(FOC > 0.5 & FOC < 1)%>% nrow()
+
+FOCsumm %>% filter(Metadata_Stiffness == "25kPa")%>% filter(Metadata_Treatment == "20 uM")%>% filter(FOC > 1)%>% nrow()
+```
+### Making a Dataframe for Bar Plot
+```{r}
+SurFOC <- data.frame(Count = c(62,52,3,100,16,1,88,28,1,116,1,0), Stiffness = c("1kPa","1kPa","1kPa","25kPa","25kPa","25kPa","1kPa","1kPa","1kPa","25kPa","25kPa","25kPa"), Treatment = c("10 uM","10 uM","10 uM","10 uM","10 uM","10 uM","20 uM","20 uM","20 uM","20 uM","20 uM","20 uM"), Assignment  = c("FOC<0.5", "0.5<FOC<1", "FOC>1", "FOC<0.5", "0.5<FOC<1", "FOC>1","FOC<0.5", "0.5<FOC<1", "FOC>1","FOC<0.5", "0.5<FOC<1", "FOC>1") )
+
+SurFOC$Assignment <- factor(SurFOC$Assignment, levels = c( "FOC>1", "0.5<FOC<1", "FOC<0.5")) 
+```
+
+```{r}
+SurFOC %>% mutate(StiffTreat = paste(Stiffness, Treatment))%>% ggplot(aes(x = StiffTreat, y = Count, fill = Assignment))+
+  geom_col(position = "dodge")
+```
+
+## Stiffness and Treatment Plots
+```{r}
+
+FOC %>% filter(Metadata_Treatment != "DMSO") %>% ggplot(aes(x = Metadata_Stiffness, y = FOC)) + 
+  geom_boxplot()+
+  theme_prism()+
+  stat_compare_means()+
+  scale_y_log10()+
+  xlab("Stiffness")+
+  ylab("Fraction of DMSO Control")+
+stat_summary(fun = "mean", color = "red", pch = 8)
+ggsave("FOCStiff.png", height = 3.5, width = 7)
+
+FOC %>% filter(Metadata_Treatment != "DMSO") %>% ggplot(aes(x = Metadata_Treatment, y = FOC)) + 
+  geom_boxplot()+
+  theme_prism()+
+ stat_compare_means()+
+  scale_y_log10()+
+   xlab("Sorafenib Treatment")+
+  ylab("Fraction of DMSO Control")+
+  stat_summary(fun = "mean", color = "red", pch = 8)
+ggsave("FOCTreat.png", height = 3.5, width = 7)
+```
+

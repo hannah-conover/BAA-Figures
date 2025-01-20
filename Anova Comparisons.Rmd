@@ -1,0 +1,279 @@
+---
+title: "Anova Comparisons"
+output: html_document
+date: "2025-01-20"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Library Loading
+```{r setup, include=FALSE}
+options(packrat.dependency.discovery.renv = TRUE)
+require(ggplot2)
+require(ggthemes)
+#require(plyr)
+require(stargazer)
+require(RColorBrewer)
+require(scales)
+require(gtable)
+require(gridExtra)
+require(data.table)
+require(dplyr)
+require(ggplot2)
+require(readr)
+require(tidyr)
+require(lme4)
+require(MASS)
+library(daewr)
+library(MASS)
+library(GAD)
+library(dplyr)
+library(sjPlot)
+library(blmeco)
+```
+## Day 0 vs Day 2 Anova Comp
+```{r}
+Day0attforcomp <- attDay0anova[, c("...1", "psig")]
+Day2attforcomp <- attDay2anova[, c("...1", "psig")]
+
+colnames(Day0attforcomp) <- c("Terms", "Day0sig")
+colnames(Day2attforcomp) <- c("Terms", "Day2sig")
+
+attachmentforcomp <- join(Day0attforcomp, Day2attforcomp)
+```
+
+```{r}
+attachmentforcomplong <- pivot_longer(attachmentforcomp, cols = starts_with("Day"),  names_to = "Day", values_to = "Significance")
+
+attachmentforcomplong <- attachmentforcomplong %>% mutate(Value = case_when( Significance == NA ~ 0,
+                                                                             Significance == "*" ~ 1,
+                                                                             Significance == "**" ~ 2,
+                                                                             Significance == "***" ~ 3
+))
+```
+### Lollipop
+```{r}
+attachmentforcomplong$Terms <- factor(attachmentforcomplong$Terms, levels = unique(attachmentforcomplong$Terms))
+
+attachmentforcomplong %>% ggplot(aes(x = Terms, y = Value, color = Day))+
+  facet_grid(cols = vars(Day))+
+  geom_segment(aes(x = Terms, xend = Terms, y = 0, yend = Value))+
+  geom_point()+
+  theme_prism()+
+  coord_flip()+
+  ylab("Significance (*s)")+
+  theme(axis.text.y = element_text(size = 8))
+  
+
+attachmentforcomplong %>% ggplot(aes(x = Terms, y = Value, color = Day))+
+ # facet_grid(cols = vars(Day))+
+  geom_segment(aes(x = Terms, xend = Terms, y = 0, yend = Value, group = Day))+
+  geom_point()+
+  theme_prism()+
+  coord_flip()+
+  ylab("Significance (*s)")+
+  theme(axis.text.y = element_text(size = 8))
+```
+### Geom_Point
+```{r}
+attachmentforcomplong %>% ggplot(aes(x = Terms, y = Day, color = Day, size = Value))+
+ # facet_grid(cols = vars(Day))+
+  geom_point()+
+  theme_prism()+
+#  coord_flip()+
+ # ylab("Significance (*s)")+
+  theme(axis.text.x = element_text(size = 8, angle = 90))
+```
+### Box Plot - Choice for showing Anova comparison
+```{r}
+attachmentforcomplong$Terms <- gsub("Abb_ECM", "ECMs", attachmentforcomplong$Terms)
+attachmentforcomplong$Terms <- gsub("Metadata_Stiffness", "Stiffness", attachmentforcomplong$Terms)
+attachmentforcomplong$Terms <- factor(attachmentforcomplong$Terms, levels = unique(attachmentforcomplong$Terms))
+
+attachmentforcomplong$Day <- gsub("Day0sig", "Day0", attachmentforcomplong$Day)
+attachmentforcomplong$Day <- gsub("Day2sig", "Day2", attachmentforcomplong$Day)
+```
+
+```{r}
+attachmentforcomplong %>% ggplot(aes(x = Terms, y = Value, fill = Day))+
+  facet_grid(cols = vars(Day))+
+  geom_col(position = "dodge", color = "white")+
+  theme_prism()+
+  coord_flip()+
+  scale_fill_manual(values = c("Day2" = "#FDE725FF", "Day0" = "#440154FF"))+
+  ylab("Significance (*s)")+
+  scale_x_discrete(limits = rev)+
+  theme(axis.text.y = element_text(size = 10))
+
+ggsave("Day0vDay2anovacomp.png", width = 10, height = 10, dpi = 1200)
+```
+
+## Survival vs Day 2
+```{r}
+survforcomp <- Suranova[, c("...1", "psig")]
+
+colnames(survforcomp) <- c("Terms", "Sursig")
+
+attforcomp <- Day2attforcomp
+
+attforcomp$Terms <- gsub("ECM", "ECMs", attforcomp$Terms)
+
+survivalforcomp <- left_join(survforcomp, attforcomp)
+```
+
+```{r}
+survivalforcomplong <- pivot_longer(survivalforcomp, cols = ends_with("sig"),  names_to = "Response", values_to = "Significance")
+
+survivalforcomplong <- survivalforcomplong %>% mutate(Value = case_when( Significance == NA ~ 0,
+                                                                             Significance == "*" ~ 1,
+                                                                             Significance == "**" ~ 2,
+                                                                             Significance == "***" ~ 3
+))
+
+```
+
+```{r}
+level_ordertreat <- c("Metadata_Stiffness","CollagenI","CollagenIV","Hyaluronic_Acid","TenascinC","Laminin",
+"Fibronectin","Galectin3","Osteopontin","Decorin","Abb_ECMs","Metadata_Stiffness:CollagenI", "Metadata_Stiffness:CollagenIV","Metadata_Stiffness:Hyaluronic_Acid", "Metadata_Stiffness:TenascinC",
+"Metadata_Stiffness:Laminin","Metadata_Stiffness:Fibronectin","Metadata_Stiffness:Galectin3",
+"Metadata_Stiffness:Osteopontin","Metadata_Stiffness:Decorin","Metadata_Stiffness:Abb_ECMs",
+"CollagenI:Abb_ECMs","CollagenIV:Abb_ECMs","Hyaluronic_Acid:Abb_ECMs","TenascinC:Abb_ECMs",
+"Laminin:Abb_ECMs","Fibronectin:Abb_ECMs","Galectin3:Abb_ECMs","Metadata_Stiffness:CollagenI:Abb_ECMs",
+"Metadata_Stiffness:CollagenIV:Abb_ECMs","Metadata_Stiffness:Hyaluronic_Acid:Abb_ECMs",
+"Metadata_Stiffness:TenascinC:Abb_ECMs","Metadata_Stiffness:Laminin:Abb_ECMs",
+"Metadata_Stiffness:Fibronectin:Abb_ECMs","Metadata_Stiffness:Galectin3:Abb_ECMs", "Metadata_Treatment", "Metadata_Stiffness:Metadata_Treatment", "Metadata_Treatment:Abb_ECMs", "Metadata_Treatment:CollagenI",
+"Metadata_Treatment:CollagenIV","Metadata_Treatment:Hyaluronic_Acid","Metadata_Treatment:TenascinC",
+"Metadata_Treatment:Laminin","Metadata_Treatment:Fibronectin","Metadata_Treatment:Galectin3",
+"Metadata_Treatment:Osteopontin","Metadata_Treatment:Decorin","Metadata_Stiffness:Metadata_Treatment:Abb_ECMs",
+"Metadata_Stiffness:Metadata_Treatment:CollagenI","Metadata_Stiffness:Metadata_Treatment:CollagenIV",
+"Metadata_Stiffness:Metadata_Treatment:Hyaluronic_Acid","Metadata_Stiffness:Metadata_Treatment:TenascinC",
+"Metadata_Stiffness:Metadata_Treatment:Laminin","Metadata_Stiffness:Metadata_Treatment:Fibronectin",
+"Metadata_Stiffness:Metadata_Treatment:Galectin3","Metadata_Stiffness:Metadata_Treatment:Osteopontin",
+"Metadata_Stiffness:Metadata_Treatment:Decorin","Metadata_Treatment:CollagenI:Abb_ECMs",
+"Metadata_Treatment:CollagenIV:Abb_ECMs","Metadata_Treatment:Hyaluronic_Acid:Abb_ECMs",
+"Metadata_Treatment:TenascinC:Abb_ECMs","Metadata_Treatment:Laminin:Abb_ECMs",
+"Metadata_Treatment:Fibronectin:Abb_ECMs","Metadata_Treatment:Galectin3:Abb_ECMs")
+
+level_ordertreat <- gsub("Abb_ECM", "ECM", level_ordertreat)
+level_ordertreat <- gsub("Metadata_Stiffness", "Stiffness", level_ordertreat)
+level_ordertreat <- gsub("Metadata_Treatment", "Treatment", level_ordertreat)
+```
+
+
+```{r}
+write.csv(unique(survivalforcomp$Terms), "survTerms.csv")
+```
+
+```{r}
+survivalforcomplong$Terms <- gsub("Abb_ECM", "ECM", survivalforcomplong$Terms)
+survivalforcomplong$Terms <- gsub("Metadata_Stiffness", "Stiffness", survivalforcomplong$Terms)
+survivalforcomplong$Terms <- gsub("Metadata_Treatment", "Treatment", survivalforcomplong$Terms)
+survivalforcomplong$Terms <- factor(survivalforcomplong$Terms, levels = level_ordertreat)
+
+survivalforcomplong$Response <- gsub("Day2sig", "Adhesion", survivalforcomplong$Response)
+survivalforcomplong$Response <- gsub("Sursig", "Survival", survivalforcomplong$Response)
+```
+
+```{r}
+survivalforcomplong %>% ggplot(aes(x = Terms, y = Value, fill = Response))+
+  facet_grid(cols = vars(Response))+
+  geom_col(position = "dodge", color = "white")+
+  theme_prism()+
+  coord_flip()+
+  scale_fill_manual(values = c("Adhesion" = "#FDE725FF", "Survival" = "#2A788Eff"))+
+  ylab("Significance (*s)")+
+  # scale_x_discrete(limits = rev)+
+  theme(axis.text.y = element_text(size = 10))
+
+ggsave("survvsAdhanovacomp.png", width = 10, height = 10, dpi = 1200)
+```
+
+## EdU vs Day 2
+```{r}
+EdUforcomp <- EdUanova[, c("...1", "psig")]
+
+colnames(EdUforcomp) <- c("Terms", "EdUsig")
+
+attforcomp <- Day2attforcomp
+
+attforcomp$Terms <- gsub("ECM", "ECMs", attforcomp$Terms)
+
+Prolforcomp <- left_join(EdUforcomp, attforcomp)
+```
+
+```{r}
+Prolforcomplong <- pivot_longer(Prolforcomp, cols = ends_with("sig"),  names_to = "Response", values_to = "Significance")
+
+Prolforcomplong <- Prolforcomplong %>% mutate(Value = case_when( Significance == NA ~ 0,
+                                                                             Significance == "*" ~ 1,
+                                                                             Significance == "**" ~ 2,
+                                                                             Significance == "***" ~ 3
+))
+
+```
+
+```{r}
+Prolforcomplong$Terms <- gsub("Abb_ECM", "ECM", Prolforcomplong$Terms)
+Prolforcomplong$Terms <- gsub("Metadata_Stiffness", "Stiffness", Prolforcomplong$Terms)
+Prolforcomplong$Terms <- gsub("Metadata_Treatment", "Treatment", Prolforcomplong$Terms)
+Prolforcomplong$Terms <- factor(Prolforcomplong$Terms, levels = level_ordertreat)
+
+Prolforcomplong$Response <- gsub("Day2sig", "Adhesion", Prolforcomplong$Response)
+Prolforcomplong$Response <- gsub("EdUsig", "Proliferation", Prolforcomplong$Response)
+```
+
+```{r}
+Prolforcomplong %>% ggplot(aes(x = Terms, y = Value, fill = Response))+
+  facet_grid(cols = vars(Response))+
+  geom_col(position = "dodge", color = "white")+
+  theme_prism()+
+  coord_flip()+
+  scale_fill_manual(values = c("Adhesion" = "#FDE725FF", "Proliferation" = "#7AD151ff"))+
+  ylab("Significance (*s)")+
+  # scale_x_discrete(limits = rev)+
+  theme(axis.text.y = element_text(size = 10))
+
+ggsave("EdUvvsAdhanovacomp.png", width = 10, height = 10, dpi = 1200)
+```
+
+## EdU vs Survival
+```{r}
+EdUvsSur <- left_join(EdUforcomp, survivalforcomp)
+```
+```{r}
+EdUvsSurlong <- pivot_longer(EdUvsSur, cols = ends_with("sig"),  names_to = "Response", values_to = "Significance")
+
+EdUvsSurlong <- EdUvsSurlong %>% mutate(Value = case_when( Significance == NA ~ 0,
+                                                                             Significance == "*" ~ 1,
+                                                                             Significance == "**" ~ 2,
+                                                                             Significance == "***" ~ 3
+))
+
+```
+
+```{r}
+EdUvsSurlong$Terms <- gsub("Abb_ECM", "ECM", EdUvsSurlong$Terms)
+EdUvsSurlong$Terms <- gsub("Metadata_Stiffness", "Stiffness", EdUvsSurlong$Terms)
+EdUvsSurlong$Terms <- gsub("Metadata_Treatment", "Treatment", EdUvsSurlong$Terms)
+EdUvsSurlong$Terms <- factor(EdUvsSurlong$Terms, levels = level_ordertreat)
+
+EdUvsSurlong$Response <- gsub("Sursig", "Survival", EdUvsSurlong$Response)
+EdUvsSurlong$Response <- gsub("EdUsig", "Proliferation", EdUvsSurlong$Response)
+EdUvsSurlong$Response <- gsub("Day2sig", "Adhesion", EdUvsSurlong$Response)
+```
+
+```{r}
+EdUvsSurlong %>% ggplot(aes(x = Terms, y = Value, fill = Response))+
+  facet_grid(cols = vars(Response))+
+  geom_col(position = "dodge", color = "white")+
+  theme_prism()+
+  coord_flip()+
+  scale_fill_manual(values = c("Adhesion" = "#FDE725FF","Survival" = "#2A788Eff", "Proliferation" = "#7AD151ff"))+
+  ylab("Significance (*s)")+
+  # scale_x_discrete(limits = rev)+
+  theme(axis.text.y = element_text(size = 10))
+
+ggsave("EdUvvsSuranovacomp.png", width = 10, height = 10, dpi = 1200)
+```

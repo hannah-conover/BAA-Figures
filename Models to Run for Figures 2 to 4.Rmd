@@ -34,17 +34,18 @@ library(stringr)
 dswithrepAbbECM <- X3DPdswithrep %>% mutate(across('Abb_ECMs', str_replace, ':|: ', ''))
 ```
 
-## Proliferation Model
+## 3DP Analysis 
+### Proliferation Model
 ```{r}
-dswithrepAbbECM$CollagenI <- relevel(as.factor(dswithrepAbbECM$CollagenI), ref = 5)
-dswithrepAbbECM$CollagenIV <- relevel(as.factor(dswithrepAbbECM$CollagenIV), ref = 5)
-dswithrepAbbECM$Hyaluronic_Acid <- relevel(as.factor(dswithrepAbbECM$Hyaluronic_Acid), ref = 5)
-dswithrepAbbECM$TenascinC <- relevel(as.factor(dswithrepAbbECM$TenascinC), ref = 5)
-dswithrepAbbECM$Laminin <- relevel(as.factor(dswithrepAbbECM$Laminin), ref = 5)
-dswithrepAbbECM$Fibronectin <- relevel(as.factor(dswithrepAbbECM$Fibronectin), ref = 5)
-dswithrepAbbECM$Galectin3 <- relevel(as.factor(dswithrepAbbECM$Galectin3), ref = 5)
-dswithrepAbbECM$Osteopontin <- relevel(as.factor(dswithrepAbbECM$Osteopontin), ref = 5)
-dswithrepAbbECM$Decorin <- relevel(as.factor(dswithrepAbbECM$Decorin), ref = 5)
+dswithrepAbbECM$CollagenI <- relevel(factor(dswithrepAbbECM$CollagenI, levels = c(0,0.25,0.5,0.75,1)), ref = 5)
+dswithrepAbbECM$CollagenIV <- relevel(factor(dswithrepAbbECM$CollagenIV, levels = c(0,0.25,0.5,0.75,1)), ref = 5)
+dswithrepAbbECM$Hyaluronic_Acid <- relevel(factor(dswithrepAbbECM$Hyaluronic_Acid, levels = c(0,0.25,0.5,0.75,1)), ref = 5)
+dswithrepAbbECM$TenascinC <- relevel(factor(dswithrepAbbECM$TenascinC, levels = c(0,0.25,0.5,0.75,1)), ref = 5)
+dswithrepAbbECM$Laminin <- relevel(factor(dswithrepAbbECM$Laminin, levels = c(0,0.25,0.5,0.75,1)), ref = 5)
+dswithrepAbbECM$Fibronectin <- relevel(factor(dswithrepAbbECM$Fibronectin, levels = c(0,0.25,0.5,0.75,1)), ref = 5)
+dswithrepAbbECM$Galectin3 <- relevel(factor(dswithrepAbbECM$Galectin3, levels = c(0,0.25,0.5,0.75,1)), ref = 5)
+dswithrepAbbECM$Osteopontin <- relevel(factor(dswithrepAbbECM$Osteopontin, levels = c(0,0.25,0.5,0.75,1)), ref = 5)
+dswithrepAbbECM$Decorin <- relevel(factor(dswithrepAbbECM$Decorin, levels = c(0,0.25,0.5,0.75,1)), ref = 5)
 
 EdUmodel <- glmer(round(Mean_Percent_Positive) ~ 
                  (1|(Metadata_Stiffness:Metadata_Treatment):Metadata_Experiment:Metadata_Block:Replicate) +
@@ -57,5 +58,32 @@ dispersion_glmer(EdUmodel)
 anova(EdUmodel)
 ```
 
+### Attachment Model 
+```{r}
+NewCombo <- dswithrepAbbECM %>% mutate(rounded_mean_object_counts = round(Mean_Nuclei))
 
+simple.model <- glmer(rounded_mean_object_counts ~
+                 (1|Metadata_Stiffness:Metadata_Experiment:Metadata_Block:Replicate) +
+                 Metadata_Stiffness + Metadata_Treatment + CollagenI + CollagenIV + Hyaluronic_Acid + TenascinC + Laminin + Fibronectin + Galectin3 + Osteopontin + Decorin + Abb_ECMs,
+               NewCombo, family = "poisson")
+
+dispersion_glmer(simple.model)
+anova(simple.model)
+# #tab_model(simple.model)
+
+surmodel <- glmer(round(Mean_Nuclei) ~ 
+                 (1|(Metadata_Stiffness:Metadata_Treatment):Metadata_Experiment:Metadata_Block:Replicate) +
+                Metadata_Stiffness+ Metadata_Treatment + CollagenI + CollagenIV + Hyaluronic_Acid + TenascinC + Laminin + Fibronectin + Galectin3 + Osteopontin + Decorin + Abb_ECMs +
+                 Metadata_Stiffness:Metadata_Treatment + Metadata_Stiffness:(CollagenI + CollagenIV + Hyaluronic_Acid + TenascinC + Laminin + Fibronectin + Galectin3 + Osteopontin + Decorin)+ Metadata_Stiffness:Abb_ECMs + Metadata_Treatment:Abb_ECMs + Metadata_Treatment:(CollagenI + CollagenIV + Hyaluronic_Acid + TenascinC + Laminin + Fibronectin + Galectin3 + Osteopontin + Decorin) + Abb_ECMs:(CollagenI + CollagenIV + Hyaluronic_Acid + TenascinC + Laminin + Fibronectin + Galectin3 + Osteopontin + Decorin) + Metadata_Stiffness:Metadata_Treatment:Abb_ECMs + Metadata_Stiffness:Metadata_Treatment:(CollagenI + CollagenIV + Hyaluronic_Acid + TenascinC + Laminin + Fibronectin + Galectin3 + Osteopontin + Decorin)+
+                Metadata_Stiffness:Abb_ECMs:(CollagenI + CollagenIV + Hyaluronic_Acid + TenascinC + Laminin + Fibronectin + Galectin3 + Osteopontin + Decorin) + Metadata_Treatment:Abb_ECMs:(CollagenI + CollagenIV + Hyaluronic_Acid + TenascinC + Laminin + Fibronectin + Galectin3 + Osteopontin + Decorin), NewCombo, 
+               family = "poisson")
+
+dispersion_glmer(surmodel)
+anova(surmodel)
+```
+
+## Day 0 and Day 2 Adhesion
+```{r}
+
+```
 
