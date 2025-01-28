@@ -156,5 +156,209 @@ FOC %>% filter(Metadata_Treatment != "DMSO") %>% ggplot(aes(x = Metadata_Treatme
   ylab("Fraction of DMSO Control")+
   stat_summary(fun = "mean", color = "red", pch = 8)
 ggsave("FOCTreat.png", height = 3.5, width = 7)
+
+FOC$Metadata_Treatment <- factor(FOC$Metadata_Treatment, levels = c("DMSO", "10 uM", "20 uM"))
+
+FOC %>% ggplot(aes(x = Metadata_Stiffness, y = FOC, fill = Metadata_Stiffness)) + 
+  facet_grid(cols = vars(Metadata_Treatment))+
+  geom_boxplot()+
+  theme_prism()+
+ stat_compare_means(label = "p.signif", size = 5)+
+  scale_fill_manual(values = c("#db6d22", "#2100bb"))+
+   xlab("Stiffness (kPa)")+
+  ylab("Fraction of DMSO Control")
+ # stat_summary(fun = "mean", color = "red", pch = 8)
+ggsave("FOCTreatStiff.png", height = 5, width = 10)
+```
+
+## Interaction Plots
+stiffness 1 kPa = #db6d22, 25 kPa = #2100bb
+ratio "#8dc1e1","#0f99ca","#07709f" 'solid' 1, 'dashed' 2, 'dotdash' 4
+```{r}
+FOCECMmeansNuc <- FOC  %>% filter(Metadata_Treatment != "DMSO") %>% group_by(Metadata_Stiffness, Abb_ECMs, Laminin, CollagenI, CollagenIV, Hyaluronic_Acid, Fibronectin, Decorin, Osteopontin, Galectin3, TenascinC, Metadata_Treatment) %>% summarize(FOC = mean(FOC, na.rm = TRUE), SEM = sd(FOC)/sqrt(length(FOC)), .groups = "drop")
+```
+
+### Stiff:Treat:Galectin3
+```{r}
+FOCECMmeansNuc %>% group_by(Metadata_Stiffness, Metadata_Treatment, Galectin3) %>% summarize(FOC = mean(FOC)) %>%ggplot( aes(x = Galectin3, y = FOC, col = Metadata_Treatment))+
+  facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = Metadata_Treatment, linetype = Metadata_Treatment), linewidth = 1.5)+
+  geom_point()+
+  theme_prism(border = TRUE)+
+  xlab("Ratio of Galectin 3")+
+  ylab("Survival")+
+  scale_color_manual(values  = c( "#fa7152","#c9462d","#8dc1e1","#0f99ca","#07709f")) +
+  scale_linetype_manual(values = c("solid", "dashed"))+
+  ggtitle("Stiffness:Treatment Interactions On Galectin 3 Ratios")
+
+ ggsave("StiffnessTreatG3FOC.png")
+ 
+ FOCECMmeansNuc %>% group_by(Metadata_Stiffness, Metadata_Treatment, Galectin3) %>% summarize(FOC = mean(FOC)) %>%ggplot( aes(x = Galectin3, y = FOC, col = Metadata_Treatment))+
+  facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = Metadata_Treatment, linetype = Metadata_Treatment), linewidth = 1.5)+
+  geom_point()+
+  theme_prism(border = TRUE)+
+  xlab("Ratio of Galectin 3")+
+  ylab("Survival")+
+  scale_color_manual(values  = c( "#fa7152","#c9462d","#8dc1e1","#0f99ca","#07709f")) +
+  scale_linetype_manual(values = c("solid", "dashed"))+
+  ggtitle("Stiffness:Treatment Interactions On Galectin 3 Ratios")
+
+ ggsave("StiffnessTreatG3FOC.png")
+```
+```{r}
+FOCECM %>% group_by(Metadata_Treatment, Abb_ECMs, TenascinC) %>% filter(TenascinC != 0) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot(aes(x = Abb_ECMs, y = Percent_Positive, col = TenascinC))+
+  facet_grid(cols = vars(Metadata_Treatment))+
+  geom_path(aes(group = TenascinC), linewidth = 1.5)+
+  geom_point()+
+  theme_prism(border = TRUE)+
+  xlab("ECM Composition")+
+  ylab("% Positive EdU")+
+  scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" 
+)) +
+  ylab("% EdU Positive")+
+  theme(axis.text.x = element_text(angle = 90))
+
+ggsave("TCTreatECM.png")
+
+```
+
+
+
+##P Heatmap
+```{r}
+heatmapFOC <- FOC[,c("Abb_ECMs", "Metadata_Slide", "Metadata_Experiment", "Metadata_Ratio", "Metadata_Stiffness", "Metadata_Treatment", "FOC")]
+
+heatmapFOC <- heatmapFOC %>%filter(Metadata_Treatment != "DMSO")%>% group_by(Abb_ECMs, Metadata_Stiffness, Metadata_Treatment, Metadata_Ratio)%>%summarize(Mean_FOC = mean(FOC), .groups = "drop")
+
+heatmapFOC <- heatmapFOC %>% mutate(TreatStiffness = paste(Metadata_Treatment, Metadata_Stiffness), Microenvironment = paste0(Abb_ECMs, Metadata_Ratio))
+
+heatmapFOC <- heatmapFOC[,c("TreatStiffness" ,"Microenvironment", "Mean_FOC")]
+
+heatmapFOC <- pivot_wider(data = heatmapFOC, names_from = "TreatStiffness", values_from = c("Mean_FOC"))
+ 
+heatmapFOC <- as.matrix(heatmapFOC)
+
+rownames(heatmapFOC) <- heatmapFOC[,1]
+
+heatmapFOC <- heatmapFOC[,2:5]
+
+heatmapFOC<- as.matrix(heatmapFOC)
+
+class(heatmapFOC) <- "numeric"
+```
+
+
+```{r}
+colann <- c("10 uM 1kPa" , "20 uM 1kPa" , "10 uM 25kPa" ,"20 uM 25kPa")
+
+coldf <- data.frame(TreatStiff = colann)
+
+coldf <- coldf %>% mutate(Treatment = if_else(TreatStiff %in% c("10 uM 1kPa",  "10 uM 25kPa"), "10 uM", "20 uM"), 
+                                            
+Stiffness = if_else(TreatStiff %in% c("10 uM 1kPa" , "20 uM 1kPa"), "1kPa", "25kPa"))
+  
+colgrouping <- data.frame(Treatment = coldf[,2],  Stiffness = coldf[,3], row.names = coldf[,1])
+```
+
+```{r}
+library(pheatmap)
+
+pheatmap(heatmapFOC, color = colorRampPalette(rev(brewer.pal(n=7, name = "RdBu")))(100), angle_col = 45, height = 15, width = 5, fontsize_row = 10, annotation_col = colgrouping, annotation_colors = list(
+  Treatment = c("10 uM" = "#6c6768", "20 uM" = "#000000"), 
+  Stiffness = c("1kPa"= "#db6d22", "25kPa" = "#2100bb")), filename = "FOCheatmapcol.png")
+
+pheatmap(heatmapFOC, color = colorRampPalette(rev(brewer.pal(n=7, name = "RdBu")))(100), angle_col = 45, height = 15, width = 5, cluster_cols = FALSE, fontsize_row = 10, 
+         annotation_col = colgrouping, annotation_colors = list(
+ Treatment = c("10 uM" = "#6c6768", "20 uM" = "#000000"), 
+  Stiffness = c("1kPa"= "#db6d22", "25kPa" = "#2100bb")),
+         filename = "FOCheatmapnone.png")
+
+```
+
+
+## C1:LN 5050 & TC:HA 5050
+```{r}
+FOC %>% filter(Abb_ECMs == "C1:LN" & Laminin == 0.5) %>% ggplot(aes(x = Metadata_Stiffness, y = FOC))  +
+  facet_grid(cols = vars(Metadata_Treatment)) +
+  geom_boxplot(fill = "#35bebf")+
+ stat_compare_means( label = "p.signif")+
+  theme_prism(border = TRUE)+
+  xlab("Ratio of Tenascin C")+
+  ylab("Mean % EdU Positive") +
+  ggtitle("C1:LN 50:50 ECM Combination") 
+
+FOC %>% filter(Abb_ECMs == "TC:HA" & TenascinC == 0.5) %>% ggplot(aes(x = Metadata_Stiffness, y = FOC))  +
+  facet_grid(cols = vars(Metadata_Treatment)) +
+  geom_boxplot(fill = "#35bebf")+
+ stat_compare_means( label = "p.signif")+
+  theme_prism(border = TRUE)+
+  xlab("Ratio of Tenascin C")+
+  ylab("Mean % EdU Positive") +
+  ggtitle("C1:LN 50:50 ECM Combination") 
+
+#ggsave("C1LNBoxFOC.png", width = 10, height = 5)
+```
+natparkspallettes (acadia) for ratios
+"#212E52", "#444E7E", "#8087AA", "#B7ABBC", "#F9ECE8", "#FCC893", "#FEB424", "#FD8700", "#D8511D"
+```{r}
+FOCECMmeansNuc$Laminin <- as.factor(FOCECMmeansNuc$Laminin)
+FOCECMmeansNuc$CollagenI <- as.factor(FOCECMmeansNuc$CollagenI)
+FOCECMmeansNuc$Hyaluronic_Acid <- as.factor(FOCECMmeansNuc$Hyaluronic_Acid)
+FOCECMmeansNuc$CollagenIV <- as.factor(FOCECMmeansNuc$CollagenIV)
+
+library(ggpubr)
+FOCECMmeansNuc %>% group_by(Metadata_Stiffness, Abb_ECMs, Laminin) %>% filter(Laminin != 0) %>% summarize(Mean_FOC = mean(FOC)) %>%ggplot(aes(x = Abb_ECMs, y = Mean_FOC, col = Laminin))+
+  facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = Laminin, linetype = Laminin), linewidth = 1.5)+
+  geom_point(size = 3)+
+  theme_prism(border = TRUE)+
+  xlab("ECM Composition")+
+  ylab("Fraction of DMSO Control")+
+  scale_color_manual(values  = c( "#444E7E", "#FEB424","#D8511D", "#8087AA")) +
+  scale_linetype_manual(values = c("longdash", "solid", "twodash", "solid"))+
+  theme(axis.text.x = element_text(angle = 90))+
+  ggtitle("Collagen IV Ratio Over Stiffness and ECMs")
+
+ggsave("StiffECMLNFOC.png")
+
+FOCECMmeansNuc %>% group_by(Metadata_Stiffness, Abb_ECMs, CollagenI) %>% filter(CollagenI != 0) %>% summarize(Mean_FOC = mean(FOC)) %>%ggplot(aes(x = Abb_ECMs, y = Mean_FOC, col = CollagenI))+
+  facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = CollagenI, linetype = CollagenI), linewidth = 1.5)+
+  geom_point(size = 3)+
+  theme_prism(border = TRUE)+
+  xlab("ECM Composition")+
+  ylab("Fraction of DMSO Control")+
+ scale_color_manual(values  = c( "#444E7E", "#FEB424","#D8511D", "#8087AA")) +
+  scale_linetype_manual(values = c("longdash", "solid", "twodash", "solid"))+
+  theme(axis.text.x = element_text(angle = 90))+
+  ggtitle("Collagen IV Ratio Over Stiffness and ECMs")
+ggsave("StiffECMC1FOC.png")
+
+FOCECMmeansNuc %>% group_by(Metadata_Stiffness, Abb_ECMs, Hyaluronic_Acid) %>% filter(Hyaluronic_Acid != 0) %>% summarize(Mean_FOC = mean(FOC)) %>%ggplot(aes(x = Abb_ECMs, y = Mean_FOC, col = Hyaluronic_Acid))+
+  facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = Hyaluronic_Acid, linetype = Hyaluronic_Acid), linewidth = 1.5)+
+  geom_point(size = 3)+
+  theme_prism(border = TRUE)+
+  xlab("ECM Composition")+
+  ylab("Fraction of DMSO Control")+
+  scale_color_manual(values  = c( "#444E7E", "#FEB424","#D8511D", "#8087AA")) +
+  scale_linetype_manual(values = c("longdash", "solid", "twodash", "solid"))+
+  theme(axis.text.x = element_text(angle = 90))+
+  ggtitle("Collagen IV Ratio Over Stiffness and ECMs")
+ggsave("StiffECMHAFOC.png")
+
+FOCECMmeansNuc %>% group_by(Metadata_Stiffness, Abb_ECMs, CollagenIV) %>% filter(CollagenIV != 0) %>% summarize(Mean_FOC = mean(FOC)) %>%ggplot(aes(x = Abb_ECMs, y = Mean_FOC, col = CollagenIV))+
+  facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = CollagenIV, linetype = CollagenIV), linewidth = 1.5)+
+  geom_point(size = 3)+
+  theme_prism(border = TRUE)+
+  xlab("ECM Composition")+
+  ylab("Fraction of DMSO Control")+
+  scale_color_manual(values  = c( "#444E7E", "#FEB424","#D8511D", "#8087AA")) +
+  scale_linetype_manual(values = c("longdash", "solid", "twodash", "solid"))+
+  theme(axis.text.x = element_text(angle = 90))+
+  ggtitle("Collagen IV Ratio Over Stiffness and ECMs")
+ggsave("StiffECMC4FOC.png")
 ```
 

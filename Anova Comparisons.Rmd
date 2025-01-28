@@ -105,7 +105,8 @@ attachmentforcomplong %>% ggplot(aes(x = Terms, y = Value, fill = Day))+
   scale_fill_manual(values = c("Day2" = "#FDE725FF", "Day0" = "#440154FF"))+
   ylab("Significance (*s)")+
   scale_x_discrete(limits = rev)+
-  theme(axis.text.y = element_text(size = 10))
+  theme(axis.text.y = element_text(size = 10),
+        strip.text.x = element_text(size = 20))
 
 ggsave("Day0vDay2anovacomp.png", width = 10, height = 10, dpi = 1200)
 ```
@@ -185,7 +186,8 @@ survivalforcomplong %>% ggplot(aes(x = Terms, y = Value, fill = Response))+
   scale_fill_manual(values = c("Adhesion" = "#FDE725FF", "Survival" = "#2A788Eff"))+
   ylab("Significance (*s)")+
   # scale_x_discrete(limits = rev)+
-  theme(axis.text.y = element_text(size = 10))
+  theme(axis.text.y = element_text(size = 10),
+          strip.text.x = element_text(size = 20))
 
 ggsave("survvsAdhanovacomp.png", width = 10, height = 10, dpi = 1200)
 ```
@@ -273,7 +275,8 @@ EdUvsSurlong %>% ggplot(aes(x = Terms, y = Value, fill = Response))+
   scale_fill_manual(values = c("Adhesion" = "#FDE725FF","Survival" = "#2A788Eff", "Proliferation" = "#7AD151ff"))+
   ylab("Significance (*s)")+
   # scale_x_discrete(limits = rev)+
-  theme(axis.text.y = element_text(size = 10))
+  theme(axis.text.y = element_text(size = 10),
+        strip.text.x = element_text(size = 20))
 
 ggsave("EdUvvsSuranovacomp.png", width = 10, height = 10, dpi = 1200)
 ```
