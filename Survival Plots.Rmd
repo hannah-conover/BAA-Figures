@@ -31,6 +31,8 @@ library(GAD)
 library(dplyr)
 library(sjPlot)
 library(blmeco)
+library(ggpubr)
+library(ggprism)
 ```
 
 ```{r}
@@ -46,15 +48,18 @@ treatmentcomp <- list(c("DMSO", "10 uM"), c("DMSO", "20 uM"), c("10 uM", "20 uM"
 dswithrepAbbECM %>% ggplot(aes(Metadata_Treatment, Mean_Nuclei)) +
   geom_boxplot()+
   theme_prism()+
+  xlab("Sorafenib Treatment")+
+  ylab("Average Adhesion")+
   stat_compare_means(comparisons = treatmentcomp, label = "p.signif")
 
-dswithrepAbbECM %>% ggplot(aes(Metadata_Stiffness, Mean_Nuclei)) +
+dswithrepAbbECM %>% ggplot(aes(Metadata_Stiffness, Mean_Nuclei, fill = Metadata_Stiffness)) +
   facet_grid(cols = vars(Metadata_Treatment))+
   geom_boxplot()+
   theme_prism()+
   xlab("Stiffness")+
   ylab("Average Adhesion")+
-  stat_compare_means(comparisons = list(c("1kPa", "25kPa")), label = "p.signif")
+  scale_fill_manual(values = c("#db6d22", "#2100bb"))+
+  stat_compare_means(comparisons = list(c("1kPa", "25kPa")), label = "p.signif", size =7, vjust = 0.5)
 ggsave("StiffnessbyTreatmentinSur.png")
 ```
 
@@ -68,9 +73,10 @@ dswithrepAbbECM %>% group_by(Metadata_Stiffness, Metadata_Treatment) %>% summari
   ylab("Average Cell Number")+
   scale_color_manual(values  = c("darkorange", "blue" ))
 ```
-
+### FOC Full Treatment Range
 ```{r}
-FOC %>% filter(Metadata_Treatment != "DMSO") %>% group_by(Condition, Metadata_Treatment, Metadata_Stiffness)%>% summarize(ControlMean = mean(ControlMean), FOC = mean(FOC)) %>% ggplot(aes(ControlMean, FOC, color = Condition))+
+FOC %>% filter(Metadata_Treatment != "DMSO") %>% group_by(Condition, Metadata_Treatment, Metadata_Stiffness)%>% #summarize(ControlMean = mean(ControlMean), FOC = mean(FOC)) %>% 
+  ggplot(aes(ControlMean, FOC, color = Condition))+
   facet_grid(cols = vars(Metadata_Treatment), rows = vars(Metadata_Stiffness)) + 
   geom_point()+
   ylab("Drug/DMSO Control (Survival)")+
@@ -81,18 +87,50 @@ FOC %>% filter(Metadata_Treatment != "DMSO") %>% group_by(Condition, Metadata_Tr
   theme(legend.position = "none")
 ggsave("FOCScatter.png", dpi = 1200)
 
-FOC %>% filter(Metadata_Treatment != "DMSO")%>% group_by(Condition, Metadata_Treatment, Metadata_Stiffness)%>% summarize(ControlMean = mean(ControlMean), FOC = mean(FOC)) %>% ggplot(aes(ControlMean, FOC, color = Condition))+
+FOC %>% filter(Metadata_Treatment != "DMSO")%>% group_by(Condition, Metadata_Treatment, Metadata_Stiffness)%>% #summarize(ControlMean = mean(ControlMean), FOC = mean(FOC)) %>% 
+  ggplot(aes(ControlMean, FOC, color = Condition))+
   facet_grid(cols = vars(Metadata_Treatment), rows = vars(Metadata_Stiffness)) + 
   geom_point()+
   scale_y_log10()+
   ylab("Drug/DMSO Control (Survival)")+
   xlab("Cell Number DMSO Control")+
-  theme_classic()+
+  theme_prism(border = TRUE)+
   geom_hline(yintercept = 1)+
   geom_hline(yintercept = 0.5)+
   theme(legend.position = "none")
 ggsave("FOCScatterlog.png", dpi = 1200)
 ```
+
+### FOC 20 uM Only
+```{r}
+FOC %>% filter(Metadata_Treatment == "20 uM") %>% group_by(Condition, Metadata_Treatment, Metadata_Stiffness)%>%
+  #summarize(ControlMean = mean(ControlMean), FOC = mean(FOC)) %>% 
+  ggplot(aes(ControlMean, FOC, color = Condition))+
+  facet_grid(cols = vars(Metadata_Treatment), rows = vars(Metadata_Stiffness)) + 
+  geom_point()+
+  ylab("Drug/DMSO Control (Survival)")+
+  xlab("Cell Number DMSO Control")+
+  theme_prism(border = TRUE)+
+  geom_hline(yintercept = 1)+
+  geom_hline(yintercept = 0.5)+
+  theme(legend.position = "none")
+ggsave("FOCScatter20.png", dpi = 1200)
+
+FOC %>% filter(Metadata_Treatment == "20 uM")%>% group_by(Condition, Metadata_Treatment, Metadata_Stiffness)%>% #summarize(ControlMean = mean(ControlMean), FOC = mean(FOC)) %>% 
+  ggplot(aes(ControlMean, FOC, color = Condition))+
+  facet_grid(cols = vars(Metadata_Treatment), rows = vars(Metadata_Stiffness)) + 
+  geom_point()+
+  scale_y_log10()+
+  ylab("Drug/DMSO Control (Survival)")+
+  xlab("Cell Number DMSO Control")+
+  theme_prism(border = TRUE)+
+  geom_hline(yintercept = 1)+
+  geom_hline(yintercept = 0.5)+
+  theme(legend.position = "none")
+ggsave("FOCScatterlog20.png", dpi = 1200)
+```
+
+Calculating Numbers for Dots (If Needed)
 ## 10 uM over both stiffnesses
 ```{r}
 FOCsumm %>%filter(Metadata_Stiffness == "1kPa")%>% filter(Metadata_Treatment == "10 uM")%>% filter(FOC < 0.5)%>% nrow()
@@ -122,6 +160,7 @@ FOCsumm %>% filter(Metadata_Stiffness == "25kPa")%>% filter(Metadata_Treatment =
 
 FOCsumm %>% filter(Metadata_Stiffness == "25kPa")%>% filter(Metadata_Treatment == "20 uM")%>% filter(FOC > 1)%>% nrow()
 ```
+
 ### Making a Dataframe for Bar Plot
 ```{r}
 SurFOC <- data.frame(Count = c(62,52,3,100,16,1,88,28,1,116,1,0), Stiffness = c("1kPa","1kPa","1kPa","25kPa","25kPa","25kPa","1kPa","1kPa","1kPa","25kPa","25kPa","25kPa"), Treatment = c("10 uM","10 uM","10 uM","10 uM","10 uM","10 uM","20 uM","20 uM","20 uM","20 uM","20 uM","20 uM"), Assignment  = c("FOC<0.5", "0.5<FOC<1", "FOC>1", "FOC<0.5", "0.5<FOC<1", "FOC>1","FOC<0.5", "0.5<FOC<1", "FOC>1","FOC<0.5", "0.5<FOC<1", "FOC>1") )
@@ -134,9 +173,9 @@ SurFOC %>% mutate(StiffTreat = paste(Stiffness, Treatment))%>% ggplot(aes(x = St
   geom_col(position = "dodge")
 ```
 
+
 ## Stiffness and Treatment Plots
 ```{r}
-
 FOC %>% filter(Metadata_Treatment != "DMSO") %>% ggplot(aes(x = Metadata_Stiffness, y = FOC)) + 
   geom_boxplot()+
   theme_prism()+
@@ -163,7 +202,7 @@ FOC %>% ggplot(aes(x = Metadata_Stiffness, y = FOC, fill = Metadata_Stiffness)) 
   facet_grid(cols = vars(Metadata_Treatment))+
   geom_boxplot()+
   theme_prism()+
- stat_compare_means(label = "p.signif", size = 5)+
+ stat_compare_means(comparisons = list(c("1kPa", "25kPa")),label = "p.signif", size = 7, hide.ns = TRUE, vjust = 0.5)+
   scale_fill_manual(values = c("#db6d22", "#2100bb"))+
    xlab("Stiffness (kPa)")+
   ylab("Fraction of DMSO Control")
@@ -282,7 +321,7 @@ pheatmap(heatmapFOC, color = colorRampPalette(rev(brewer.pal(n=7, name = "RdBu")
 FOC %>% filter(Abb_ECMs == "C1:LN" & Laminin == 0.5) %>% ggplot(aes(x = Metadata_Stiffness, y = FOC))  +
   facet_grid(cols = vars(Metadata_Treatment)) +
   geom_boxplot(fill = "#35bebf")+
- stat_compare_means( label = "p.signif")+
+ stat_compare_means( label = "p.signif", size = 7, vjust = 0.5)+
   theme_prism(border = TRUE)+
   xlab("Ratio of Tenascin C")+
   ylab("Mean % EdU Positive") +
@@ -299,6 +338,9 @@ FOC %>% filter(Abb_ECMs == "TC:HA" & TenascinC == 0.5) %>% ggplot(aes(x = Metada
 
 #ggsave("C1LNBoxFOC.png", width = 10, height = 5)
 ```
+
+## S:E:R Intx Plots
+### 20 uM
 natparkspallettes (acadia) for ratios
 "#212E52", "#444E7E", "#8087AA", "#B7ABBC", "#F9ECE8", "#FCC893", "#FEB424", "#FD8700", "#D8511D"
 ```{r}
@@ -306,9 +348,11 @@ FOCECMmeansNuc$Laminin <- as.factor(FOCECMmeansNuc$Laminin)
 FOCECMmeansNuc$CollagenI <- as.factor(FOCECMmeansNuc$CollagenI)
 FOCECMmeansNuc$Hyaluronic_Acid <- as.factor(FOCECMmeansNuc$Hyaluronic_Acid)
 FOCECMmeansNuc$CollagenIV <- as.factor(FOCECMmeansNuc$CollagenIV)
+FOCECMmeansNuc$Galectin3 <- as.factor(FOCECMmeansNuc$Galectin3)
 
 library(ggpubr)
-FOCECMmeansNuc %>% group_by(Metadata_Stiffness, Abb_ECMs, Laminin) %>% filter(Laminin != 0) %>% summarize(Mean_FOC = mean(FOC)) %>%ggplot(aes(x = Abb_ECMs, y = Mean_FOC, col = Laminin))+
+library(ggprism)
+FOCECMmeansNuc %>% filter(Metadata_Treatment == "20 uM") %>% group_by(Metadata_Stiffness, Abb_ECMs, Laminin) %>% filter(Laminin != 0) %>% summarize(Mean_FOC = mean(FOC)) %>% ggplot(aes(x = Abb_ECMs, y = Mean_FOC, col = Laminin))+
   facet_grid(cols = vars(Metadata_Stiffness))+
   geom_path(aes(group = Laminin, linetype = Laminin), linewidth = 1.5)+
   geom_point(size = 3)+
@@ -318,11 +362,12 @@ FOCECMmeansNuc %>% group_by(Metadata_Stiffness, Abb_ECMs, Laminin) %>% filter(La
   scale_color_manual(values  = c( "#444E7E", "#FEB424","#D8511D", "#8087AA")) +
   scale_linetype_manual(values = c("longdash", "solid", "twodash", "solid"))+
   theme(axis.text.x = element_text(angle = 90))+
-  ggtitle("Collagen IV Ratio Over Stiffness and ECMs")
+  ylim(c(0,1.6))+
+  ggtitle("Laminin Ratio Over Stiffness and ECMs (20 uM)")
 
-ggsave("StiffECMLNFOC.png")
+ggsave("StiffECMLNFOC20.png")
 
-FOCECMmeansNuc %>% group_by(Metadata_Stiffness, Abb_ECMs, CollagenI) %>% filter(CollagenI != 0) %>% summarize(Mean_FOC = mean(FOC)) %>%ggplot(aes(x = Abb_ECMs, y = Mean_FOC, col = CollagenI))+
+FOCECMmeansNuc %>% filter(Metadata_Treatment == "20 uM") %>% group_by(Metadata_Stiffness, Abb_ECMs, CollagenI) %>% filter(CollagenI != 0) %>% summarize(Mean_FOC = mean(FOC)) %>%ggplot(aes(x = Abb_ECMs, y = Mean_FOC, col = CollagenI))+
   facet_grid(cols = vars(Metadata_Stiffness))+
   geom_path(aes(group = CollagenI, linetype = CollagenI), linewidth = 1.5)+
   geom_point(size = 3)+
@@ -332,33 +377,164 @@ FOCECMmeansNuc %>% group_by(Metadata_Stiffness, Abb_ECMs, CollagenI) %>% filter(
  scale_color_manual(values  = c( "#444E7E", "#FEB424","#D8511D", "#8087AA")) +
   scale_linetype_manual(values = c("longdash", "solid", "twodash", "solid"))+
   theme(axis.text.x = element_text(angle = 90))+
-  ggtitle("Collagen IV Ratio Over Stiffness and ECMs")
-ggsave("StiffECMC1FOC.png")
+  ylim(c(0,1.6))+
+  ggtitle("Collagen I Ratio Over Stiffness and ECMs")
+ggsave("StiffECMC1FOC20.png")
 
-FOCECMmeansNuc %>% group_by(Metadata_Stiffness, Abb_ECMs, Hyaluronic_Acid) %>% filter(Hyaluronic_Acid != 0) %>% summarize(Mean_FOC = mean(FOC)) %>%ggplot(aes(x = Abb_ECMs, y = Mean_FOC, col = Hyaluronic_Acid))+
+FOCECMmeansNuc %>% filter(Metadata_Treatment == "20 uM") %>% group_by(Metadata_Stiffness, Abb_ECMs, Galectin3) %>% filter(Galectin3 != 0) %>% summarize(Mean_FOC = mean(FOC)) %>%ggplot(aes(x = Abb_ECMs, y = Mean_FOC, col = Galectin3))+
+  facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = Galectin3, linetype = Galectin3), linewidth = 1.5)+
+  geom_point(size = 3)+
+  theme_prism(border = TRUE)+
+  xlab("ECM Composition")+
+  ylab("Fraction of DMSO Control")+
+ scale_color_manual(values  = c( "#444E7E", "#FEB424","#D8511D", "#8087AA")) +
+  scale_linetype_manual(values = c("longdash", "solid", "twodash", "solid"))+
+  theme(axis.text.x = element_text(angle = 90))+
+  ylim(c(0,1.6))+
+  ggtitle("Galectin 3 Ratio Over Stiffness and ECMs (20 uM)")
+ggsave("StiffECMG3FOC20.png")
+
+# FOCECMmeansNuc %>% group_by(Metadata_Stiffness, Abb_ECMs, Hyaluronic_Acid) %>% filter(Hyaluronic_Acid != 0) %>% summarize(Mean_FOC = mean(FOC)) %>%ggplot(aes(x = Abb_ECMs, y = Mean_FOC, col = Hyaluronic_Acid))+
+#   facet_grid(cols = vars(Metadata_Stiffness))+
+#   geom_path(aes(group = Hyaluronic_Acid, linetype = Hyaluronic_Acid), linewidth = 1.5)+
+#   geom_point(size = 3)+
+#   theme_prism(border = TRUE)+
+#   xlab("ECM Composition")+
+#   ylab("Fraction of DMSO Control")+
+#   scale_color_manual(values  = c( "#444E7E", "#FEB424","#D8511D", "#8087AA")) +
+#   scale_linetype_manual(values = c("longdash", "solid", "twodash", "solid"))+
+#   theme(axis.text.x = element_text(angle = 90))+
+#   ggtitle("Hyaluronic Acid Ratio Over Stiffness and ECMs")
+# ggsave("StiffECMHAFOC.png")
+# 
+# FOCECMmeansNuc %>% group_by(Metadata_Stiffness, Abb_ECMs, CollagenIV) %>% filter(CollagenIV != 0) %>% summarize(Mean_FOC = mean(FOC)) %>%ggplot(aes(x = Abb_ECMs, y = Mean_FOC, col = CollagenIV))+
+#   facet_grid(cols = vars(Metadata_Stiffness))+
+#   geom_path(aes(group = CollagenIV, linetype = CollagenIV), linewidth = 1.5)+
+#   geom_point(size = 3)+
+#   theme_prism(border = TRUE)+
+#   xlab("ECM Composition")+
+#   ylab("Fraction of DMSO Control")+
+#   scale_color_manual(values  = c( "#444E7E", "#FEB424","#D8511D", "#8087AA")) +
+#   scale_linetype_manual(values = c("longdash", "solid", "twodash", "solid"))+
+#   theme(axis.text.x = element_text(angle = 90))+
+#   ggtitle("Collagen IV Ratio Over Stiffness and ECMs")
+# ggsave("StiffECMC4FOC.png")
+```
+###10 uM
+```{r}
+library(ggpubr)
+library(ggprism)
+
+FOCECMmeansNuc %>% filter(Metadata_Treatment == "10 uM") %>% group_by(Metadata_Stiffness, Abb_ECMs, Laminin) %>% filter(Laminin != 0) %>% summarize(Mean_FOC = mean(FOC)) %>% ggplot(aes(x = Abb_ECMs, y = Mean_FOC, col = Laminin))+
+  facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = Laminin, linetype = Laminin), linewidth = 1.5)+
+  geom_point(size = 3)+
+  theme_prism(border = TRUE)+
+  xlab("ECM Composition")+
+  ylab("Fraction of DMSO Control")+
+  scale_color_manual(values  = c( "#444E7E", "#FEB424","#D8511D", "#8087AA")) +
+  scale_linetype_manual(values = c("longdash", "solid", "twodash", "solid"))+
+  theme(axis.text.x = element_text(angle = 90))+
+  ylim(c(0,1.6))+
+  ggtitle("Laminin Ratio Over Stiffness and ECMs  (10 uM)")
+
+ggsave("StiffECMLNFOC10.png")
+
+FOCECMmeansNuc %>% filter(Metadata_Treatment == "10 uM") %>% group_by(Metadata_Stiffness, Abb_ECMs, CollagenI) %>% filter(CollagenI != 0) %>% summarize(Mean_FOC = mean(FOC)) %>%ggplot(aes(x = Abb_ECMs, y = Mean_FOC, col = CollagenI))+
+  facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_path(aes(group = CollagenI, linetype = CollagenI), linewidth = 1.5)+
+  geom_point(size = 3)+
+  theme_prism(border = TRUE)+
+  xlab("ECM Composition")+
+  ylab("Fraction of DMSO Control")+
+ scale_color_manual(values  = c( "#444E7E", "#FEB424","#D8511D", "#8087AA")) +
+  scale_linetype_manual(values = c("longdash", "solid", "twodash", "solid"))+
+  theme(axis.text.x = element_text(angle = 90))+
+  ylim(c(0,1.6))+
+  ggtitle("Collagen I Ratio Over Stiffness and ECMs")
+ggsave("StiffECMC1FOC10.png")
+
+FOCECMmeansNuc %>% filter(Metadata_Treatment == "10 uM") %>% group_by(Metadata_Stiffness, Abb_ECMs, Hyaluronic_Acid) %>% filter(Hyaluronic_Acid != 0) %>% summarize(Mean_FOC = mean(FOC)) %>%ggplot(aes(x = Abb_ECMs, y = Mean_FOC, col = Hyaluronic_Acid))+
   facet_grid(cols = vars(Metadata_Stiffness))+
   geom_path(aes(group = Hyaluronic_Acid, linetype = Hyaluronic_Acid), linewidth = 1.5)+
   geom_point(size = 3)+
   theme_prism(border = TRUE)+
   xlab("ECM Composition")+
   ylab("Fraction of DMSO Control")+
-  scale_color_manual(values  = c( "#444E7E", "#FEB424","#D8511D", "#8087AA")) +
+ scale_color_manual(values  = c( "#444E7E", "#FEB424","#D8511D", "#8087AA")) +
   scale_linetype_manual(values = c("longdash", "solid", "twodash", "solid"))+
   theme(axis.text.x = element_text(angle = 90))+
-  ggtitle("Collagen IV Ratio Over Stiffness and ECMs")
-ggsave("StiffECMHAFOC.png")
+  ylim(c(0,1.6))+
+  ggtitle("Hyaluronic Acid Ratio Over Stiffness and ECMs (10 uM)")
+ggsave("StiffECMHAFOC10.png")
 
-FOCECMmeansNuc %>% group_by(Metadata_Stiffness, Abb_ECMs, CollagenIV) %>% filter(CollagenIV != 0) %>% summarize(Mean_FOC = mean(FOC)) %>%ggplot(aes(x = Abb_ECMs, y = Mean_FOC, col = CollagenIV))+
-  facet_grid(cols = vars(Metadata_Stiffness))+
-  geom_path(aes(group = CollagenIV, linetype = CollagenIV), linewidth = 1.5)+
-  geom_point(size = 3)+
-  theme_prism(border = TRUE)+
-  xlab("ECM Composition")+
-  ylab("Fraction of DMSO Control")+
-  scale_color_manual(values  = c( "#444E7E", "#FEB424","#D8511D", "#8087AA")) +
-  scale_linetype_manual(values = c("longdash", "solid", "twodash", "solid"))+
-  theme(axis.text.x = element_text(angle = 90))+
-  ggtitle("Collagen IV Ratio Over Stiffness and ECMs")
-ggsave("StiffECMC4FOC.png")
+```
+
+## Dot Plot Math
+```{r}
+library(dplyr)
+FOC %>%filter(Metadata_Treatment != "DMSO") %>%filter(FOC < 1 & FOC > 0.5) %>% group_by(Metadata_Stiffness, Metadata_Treatment) %>% summarize(length(FOC))
+
+FOCsumm %>% filter(Metadata_Treatment != "DMSO") %>%filter(FOC < 1 & FOC > 0.5) %>% group_by(Metadata_Stiffness, Metadata_Treatment) %>% summarize(length(FOC))
+```
+
+## Violin Plot FOC 
+```{r}
+
+FOCMeans <- FOC %>% group_by(Metadata_Stiffness, Conditions, Metadata_Treatment) %>% summarize(FOC = mean(FOC), .groups = "drop")
+
+FOCCM <-  compare_means(FOC ~ Metadata_Stiffness, subset(FOC, Metadata_Treatment != "DMSO"), group.by = "Metadata_Treatment")
+
+  ggplot()+
+  facet_grid(cols = vars(Metadata_Treatment))+
+  geom_violin(data = subset(FOC, Metadata_Treatment != "DMSO"),aes(x = Metadata_Stiffness, y = FOC)) + 
+  geom_point(data = subset(FOCMeans, Metadata_Treatment != "DMSO"), aes(x = Metadata_Stiffness, y = FOC, group = Conditions), position = position_jitter(width = 0.2))+
+ # scale_y_log10()+
+  theme_prism()+
+ theme(axis.text.x = element_text( size = 25),
+        axis.title.x = element_text(size = 25),
+        axis.text.y = element_text(size = 25), 
+        axis.title.y = element_text(size = 25),
+        legend.position = "none",
+        plot.title = element_text(size =25),
+        panel.background = element_blank(),
+        strip.text = element_text(size = 25),
+        panel.border = element_rect(colour = "black", fill=NA, size=1))+
+    stat_pvalue_manual(FOCCM, y.position = 4, label = "p.signif", label.size = 10)+
+  labs(title = "Fraction of DMSO Control",
+       x = "Stiffness (kPa)",
+       y = "Fraction of DMSO Control")
+  ggsave(file = "StiffnessViolinFOC.png", width = 15, height = 8)
+  
+ 
+```
+## FOC comparisons
+```{r}
+mycomparisons <- list(c("25/75", "50/50"), c("50/50", "75/25"), c("25/75", "75/25"))
+ggplot(data = subset(FOC, Metadata_ECMs == "Collagen ILaminin" & Metadata_Treatment == "10 uM" & Metadata_Stiffness == "1kPa"), aes(x = Metadata_Ratio, y = FOC))+
+  facet_grid(cols = vars(Metadata_Treatment), rows = vars(Metadata_Stiffness))+
+  geom_boxplot(fill = "#89b94b") + 
+  theme_prism()+
+  stat_compare_means(comparisons = mycomparisons, label = "p.signif", size = 7, vjust = 0.5, hide.ns = TRUE)+
+    theme(legend.position = "none",
+          panel.border = element_rect(colour = "black", fill=NA, size=1))+
+  labs(title = "Fold Change from DMSO on C1LN \n 10 uM 1 kPa",
+       x = "ECM Ratio",
+       y = "Fold Change from DMSO")
+  ggsave(file = "C1LN.png", width = 5, height = 5)
+  
+  ggplot(data = subset(FOC, Metadata_ECMs == "Tenascin CFibronectin" 
+                        & Metadata_Treatment == "20 uM" & Metadata_Stiffness == "1kPa"), aes(x = Metadata_Ratio, y = FOC))+
+  facet_grid(cols = vars(Metadata_Treatment), rows = vars(Metadata_Stiffness))+
+  geom_boxplot(fill = "#e0a852") + 
+  theme_prism()+
+    theme(legend.position = "none",
+          panel.border = element_rect(colour = "black", fill=NA, size=1))+
+  stat_compare_means(comparisons = mycomparisons, label = "p.signif", size = 7, vjust = 0.5, hide.ns = TRUE)+
+  labs(title = "Fold Change from DMSO on TCFN \n 20 uM 1 kPa",
+       x = "ECM Ratio",
+       y = "Fold Change from DMSO")
+  ggsave(file = "TCFN.png", width = 5, height = 5)
 ```
 

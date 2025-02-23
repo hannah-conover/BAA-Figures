@@ -32,6 +32,7 @@ library(GAD)
 library(dplyr)
 library(sjPlot)
 library(blmeco)
+library(ggprism)
 ```
 ## Day 0 vs Day 2 Anova Comp
 ```{r}
@@ -113,84 +114,70 @@ ggsave("Day0vDay2anovacomp.png", width = 10, height = 10, dpi = 1200)
 
 ## Survival vs Day 2
 ```{r}
-survforcomp <- Suranova[, c("...1", "psig")]
+Attforcomp <- attDay2anova[,c("...1", "psig")]
+colnames(Attforcomp) <- c("Terms", "Attsig")
 
-colnames(survforcomp) <- c("Terms", "Sursig")
+Suranova10$Terms <- Suranova10$...1
+Suranova20$Terms <- Suranova20$...1
 
-attforcomp <- Day2attforcomp
+Survforcomp10 <- Suranova10[,c("Terms", "psig")]
+Survforcomp20 <- Suranova20[,c("Terms", "psig")]
 
-attforcomp$Terms <- gsub("ECM", "ECMs", attforcomp$Terms)
-
-survivalforcomp <- left_join(survforcomp, attforcomp)
+colnames(Survforcomp10) <- c("Terms", "10uMsig")
+colnames(Survforcomp20) <- c("Terms", "20uMsig")
 ```
 
 ```{r}
-survivalforcomplong <- pivot_longer(survivalforcomp, cols = ends_with("sig"),  names_to = "Response", values_to = "Significance")
+library(tidyr)
+library(dplyr)
+Attforcomp$Terms <- gsub("Abb_ECM", "Abb_ECMs", Attforcomp$Terms)
 
-survivalforcomplong <- survivalforcomplong %>% mutate(Value = case_when( Significance == NA ~ 0,
+Survivalcomp <- plyr::join(Attforcomp, Survforcomp10)
+Survivalcomp <- plyr::join(Survivalcomp, Survforcomp20)
+
+```
+
+```{r}
+survivalforcomplong <- pivot_longer(Survivalcomp, cols = ends_with("sig"), names_to = "Response", values_to = "Significance")
+
+survivalforcomplong <- survivalforcomplong %>% mutate(Value = case_when(Significance == NA ~ 0,
                                                                              Significance == "*" ~ 1,
                                                                              Significance == "**" ~ 2,
-                                                                             Significance == "***" ~ 3
-))
+                                                                             Significance == "***" ~ 3))
 
-```
-
-```{r}
-level_ordertreat <- c("Metadata_Stiffness","CollagenI","CollagenIV","Hyaluronic_Acid","TenascinC","Laminin",
-"Fibronectin","Galectin3","Osteopontin","Decorin","Abb_ECMs","Metadata_Stiffness:CollagenI", "Metadata_Stiffness:CollagenIV","Metadata_Stiffness:Hyaluronic_Acid", "Metadata_Stiffness:TenascinC",
-"Metadata_Stiffness:Laminin","Metadata_Stiffness:Fibronectin","Metadata_Stiffness:Galectin3",
-"Metadata_Stiffness:Osteopontin","Metadata_Stiffness:Decorin","Metadata_Stiffness:Abb_ECMs",
-"CollagenI:Abb_ECMs","CollagenIV:Abb_ECMs","Hyaluronic_Acid:Abb_ECMs","TenascinC:Abb_ECMs",
-"Laminin:Abb_ECMs","Fibronectin:Abb_ECMs","Galectin3:Abb_ECMs","Metadata_Stiffness:CollagenI:Abb_ECMs",
-"Metadata_Stiffness:CollagenIV:Abb_ECMs","Metadata_Stiffness:Hyaluronic_Acid:Abb_ECMs",
-"Metadata_Stiffness:TenascinC:Abb_ECMs","Metadata_Stiffness:Laminin:Abb_ECMs",
-"Metadata_Stiffness:Fibronectin:Abb_ECMs","Metadata_Stiffness:Galectin3:Abb_ECMs", "Metadata_Treatment", "Metadata_Stiffness:Metadata_Treatment", "Metadata_Treatment:Abb_ECMs", "Metadata_Treatment:CollagenI",
-"Metadata_Treatment:CollagenIV","Metadata_Treatment:Hyaluronic_Acid","Metadata_Treatment:TenascinC",
-"Metadata_Treatment:Laminin","Metadata_Treatment:Fibronectin","Metadata_Treatment:Galectin3",
-"Metadata_Treatment:Osteopontin","Metadata_Treatment:Decorin","Metadata_Stiffness:Metadata_Treatment:Abb_ECMs",
-"Metadata_Stiffness:Metadata_Treatment:CollagenI","Metadata_Stiffness:Metadata_Treatment:CollagenIV",
-"Metadata_Stiffness:Metadata_Treatment:Hyaluronic_Acid","Metadata_Stiffness:Metadata_Treatment:TenascinC",
-"Metadata_Stiffness:Metadata_Treatment:Laminin","Metadata_Stiffness:Metadata_Treatment:Fibronectin",
-"Metadata_Stiffness:Metadata_Treatment:Galectin3","Metadata_Stiffness:Metadata_Treatment:Osteopontin",
-"Metadata_Stiffness:Metadata_Treatment:Decorin","Metadata_Treatment:CollagenI:Abb_ECMs",
-"Metadata_Treatment:CollagenIV:Abb_ECMs","Metadata_Treatment:Hyaluronic_Acid:Abb_ECMs",
-"Metadata_Treatment:TenascinC:Abb_ECMs","Metadata_Treatment:Laminin:Abb_ECMs",
-"Metadata_Treatment:Fibronectin:Abb_ECMs","Metadata_Treatment:Galectin3:Abb_ECMs")
-
-level_ordertreat <- gsub("Abb_ECM", "ECM", level_ordertreat)
-level_ordertreat <- gsub("Metadata_Stiffness", "Stiffness", level_ordertreat)
-level_ordertreat <- gsub("Metadata_Treatment", "Treatment", level_ordertreat)
-```
-
-
-```{r}
-write.csv(unique(survivalforcomp$Terms), "survTerms.csv")
-```
-
-```{r}
-survivalforcomplong$Terms <- gsub("Abb_ECM", "ECM", survivalforcomplong$Terms)
+survivalforcomplong$Terms <- gsub("Abb_ECMs", "ECMs", survivalforcomplong$Terms)
 survivalforcomplong$Terms <- gsub("Metadata_Stiffness", "Stiffness", survivalforcomplong$Terms)
-survivalforcomplong$Terms <- gsub("Metadata_Treatment", "Treatment", survivalforcomplong$Terms)
-survivalforcomplong$Terms <- factor(survivalforcomplong$Terms, levels = level_ordertreat)
 
-survivalforcomplong$Response <- gsub("Day2sig", "Adhesion", survivalforcomplong$Response)
-survivalforcomplong$Response <- gsub("Sursig", "Survival", survivalforcomplong$Response)
+survivalforcomplong <- survivalforcomplong %>% mutate(Responses = case_when(Response == "Attsig" ~ "Adhesion",
+                                                                             Response == "10uMsig" ~ "10uMSurvival",
+                                                                             Response == "20uMsig" ~ "20uMSurvival"))
+survivalforcomplong$Responses <- factor(survivalforcomplong$Responses, levels = c("Adhesion", "10uMSurvival", "20uMSurvival"))
+```
+
+
+```{r}
+term_order <- Survivalcomp$Terms
+term_order <- gsub("Abb_ECMs", "ECMs", term_order)
+term_order <- gsub("Metadata_Stiffness", "Stiffness", term_order)
+
+survivalforcomplong$Terms <- factor(survivalforcomplong$Terms, levels = term_order)
 ```
 
 ```{r}
-survivalforcomplong %>% ggplot(aes(x = Terms, y = Value, fill = Response))+
-  facet_grid(cols = vars(Response))+
+survivalforcomplong %>% filter(Responses != "10uMSurvival")%>%ggplot(aes(x = Terms, y = Value, fill = Responses))+
+  facet_grid(cols = vars(Responses))+
   geom_col(position = "dodge", color = "white")+
   theme_prism()+
   coord_flip()+
-  scale_fill_manual(values = c("Adhesion" = "#FDE725FF", "Survival" = "#2A788Eff"))+
+  scale_fill_manual(values = c("Adhesion" = "#FDE725FF", "10uMSurvival" = "#2A788Eff", "20uMSurvival" = "#414487FF"))+
   ylab("Significance (*s)")+
-  # scale_x_discrete(limits = rev)+
+ #scale_x_discrete(limits = rev)+
   theme(axis.text.y = element_text(size = 10),
           strip.text.x = element_text(size = 20))
 
-ggsave("survvsAdhanovacomp.png", width = 10, height = 10, dpi = 1200)
+ggsave("20survvsAdhanovacomp.png", width = 10, height = 10, dpi = 1200)
 ```
+
 
 ## EdU vs Day 2
 ```{r}

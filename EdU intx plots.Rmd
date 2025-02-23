@@ -70,7 +70,7 @@ EdUECMmeansNuc %>% group_by(Metadata_Stiffness, Laminin) %>% summarize(Percent_P
   ylab("% Positive EdU")+
   scale_color_manual(values = c("#db6d22", "#2100bb"))
 
-  ggsave("StiffnessvsLamEdU.png")
+  ggsave("StiffnessvsLamEdU.png", dpi = 1200)
 ```
 
 
@@ -348,7 +348,7 @@ ratiocomparisons <- list(c("0.25", "0.5"), c("0.25","0.75"),c("0.5", "0.75"))
 dswithrepAbbECM %>% filter(Abb_ECMs == "TCHA") %>% ggplot(aes(x = TenascinC, y = Mean_Percent_Positive))  +
   facet_grid(cols = vars(Metadata_Treatment)) +
   geom_boxplot( fill = "#94d8d8")+
-  stat_compare_means(comparisons = ratiocomparisons, label = "p.signif")+
+  stat_compare_means(comparisons = ratiocomparisons, label = "p.signif", size = 7, vjust = 0.5, hide.ns = TRUE)+
   theme_prism(border = TRUE)+
   xlab("Ratio of Tenascin C")+
   ylab("Mean % EdU Positive") +
@@ -466,7 +466,7 @@ treatmentcomp <- list(c("DMSO", "10 uM"), c("DMSO", "20 uM"), c("10 uM", "20 uM"
 dswithrepAbbECM %>% ggplot(aes(Metadata_Treatment, Mean_Percent_Positive, fill = Metadata_Stiffness)) +
   geom_boxplot()+
   theme_prism()+
-  stat_compare_means(label = "p.signif", size = 5)+
+  stat_compare_means(label = "p.signif", size = 7, vjust = 0.5)+
   scale_fill_manual(values = c("#db6d22", "#2100bb"))+
   xlab("Sorafenib Treatment")+
   ylab("% EdU Positive")
