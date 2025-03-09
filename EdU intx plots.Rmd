@@ -463,6 +463,8 @@ dswithrepAbbECM %>% ggplot(aes(Metadata_Stiffness, Mean_Percent_Positive)) +
 
 treatmentcomp <- list(c("DMSO", "10 uM"), c("DMSO", "20 uM"), c("10 uM", "20 uM"))
 
+dswithrepAbbECM$Metadata_Treatment <- factor(dswithrepAbbECM$Metadata_Treatment, levels = c("DMSO", "10 uM", "20 uM"))
+
 dswithrepAbbECM %>% ggplot(aes(Metadata_Treatment, Mean_Percent_Positive, fill = Metadata_Stiffness)) +
   geom_boxplot()+
   theme_prism()+
@@ -485,28 +487,13 @@ EdUECMmeansNuc %>% group_by(Metadata_Treatment, Metadata_Stiffness) %>% summariz
   scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" ))
 
 ```
-## Need to  Figure out Survival
-```{r}
-FOCsumm <- FOC %>% group_by(Abb_ECMs, Metadata_Stiffness, Metadata_Treatment, CollagenI,CollagenIV, Laminin, Hyaluronic_Acid,   TenascinC, Osteopontin, Galectin3, Fibronectin, Decorin, Conditions)%>% summarize(FOC = mean(FOC), ControlMean = mean(ControlMean))
-```
-"C1:DN"  "C1:HA"  "C4:FN"  "C4:G3"  "C4:LN"  "C4:OPN" "G3:FN"  "HA:DN"  "HA:FN"  "LN:DN"  "LN:FN"  "LN:G3"  "OPN:G3" Maintained
 
-```{r}
-FOCDecreased <- subset(FOCsumm, FOC < 0.25)
-FOCMaintained <- subset(FOCsumm, 0.75<FOC & FOC<1.25)
-
-FOCMaintained <- subset(FOCMaintained, Metadata_Treatment != "DMSO")
-
-
-hist(subset(FOCsumm, Metadata_Treatment != "DMSO")$FOC, breaks = 30)
-
-```
 
 ##P Heatmap
 ```{r}
 heatmapEdU <- FOC[,c("Abb_ECMs", "Metadata_Slide", "Metadata_Experiment", "Metadata_Ratio", "Metadata_Stiffness", "Metadata_Treatment", "Mean_Percent_Positive")]
 
-heatmapEdU <- heatmapEdU %>% group_by(Abb_ECMs, Metadata_Stiffness, Metadata_Treatment, Metadata_Ratio)%>%summarize(Mean_EdU = mean(Mean_Percent_Positive), .groups = "drop")
+heatmapEdU <- heatmapEdU %>% group_by(Abb_ECMs, Metadata_Stiffness, Metadata_Treatment, Metadata_Ratio)%>%dplyr::summarize(Mean_EdU = mean(Mean_Percent_Positive), .groups = "drop")
 
 heatmapEdU <- heatmapEdU %>% mutate(TreatStiffness = paste(Metadata_Treatment, Metadata_Stiffness), Microenvironment = paste0(Abb_ECMs, Metadata_Ratio))
 
@@ -555,16 +542,24 @@ pheatmap(heatmapEdU, color = colorRampPalette(rev(brewer.pal(n=7, name = "PRGn")
 
 ```
 
-
+## Dot Plot For EdU
 ```{r}
 library(ggprism)
-FOCsumm %>% filter(Metadata_Treatment != "DMSO") %>% ggplot(aes(ControlMean, FOC, color = Conditions)) + 
+dswithrepAbbECM %>% group_by(Metadata_Treatment, Metadata_Stiffness, Conditions) %>% dplyr::summarize(Mean_Nuclei = mean(Mean_Nuclei), Mean_EdU = mean(Mean_Percent_Positive)) %>% ggplot(aes(Mean_Nuclei, Mean_EdU, color = Conditions)) + 
   facet_grid(cols = vars(Metadata_Treatment), rows = vars(Metadata_Stiffness))+
   geom_point()+
-  theme_prism() +
-  theme(legend.position = "none")
+  theme_prism(border = TRUE) +
+  scale_x_log10()+
+  theme(legend.position = "none")+
+  xlab("Average Cell Adhesion")+
+  ylab("% EdU Positive")
+ggsave("EdUScatter.png" , dpi = 1200)
   
+EdUsumm <- dswithrepAbbECM %>% group_by(Metadata_Treatment, Metadata_Stiffness, Conditions) %>% dplyr::summarize(Mean_Nuclei = mean(Mean_Nuclei), Mean_EdU = mean(Mean_Percent_Positive))
 ```
+
+
+
 "C1:DN"  "C1:HA"  "C4:FN"  "C4:G3"  "C4:LN"  "C4:OPN" "G3:FN"  "HA:DN"  "HA:FN"  "LN:DN"  "LN:FN"  "LN:G3"  "OPN:G3" Maintained
 
 ```{r}

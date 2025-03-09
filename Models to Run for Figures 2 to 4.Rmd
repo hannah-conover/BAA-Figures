@@ -31,7 +31,7 @@ library(blmeco)
 
 ```{r}
 library(stringr)
-dswithrepAbbECM <- X3DPdswithrep %>% mutate(across('Abb_ECMs', str_replace, ':|: ', ''))
+dswithrepAbbECM <- dswithrep %>% mutate(across('Abb_ECMs', str_replace, ':|: ', ''))
 ```
 
 ## 3DP Analysis 

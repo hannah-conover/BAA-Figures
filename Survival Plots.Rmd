@@ -64,14 +64,14 @@ ggsave("StiffnessbyTreatmentinSur.png")
 ```
 
 ```{r}
-dswithrepAbbECM %>% group_by(Metadata_Stiffness, Metadata_Treatment) %>% summarize(Mean_Nuclei = mean(Mean_Nuclei)) %>%ggplot( aes(x = Metadata_Treatment, y = Mean_Nuclei, col = Metadata_Stiffness))+
+dswithrepAbbECM %>% group_by(Metadata_Stiffness, Metadata_Treatment) %>% dplyr::summarize(Mean_Nuclei = mean(Mean_Nuclei)) %>%ggplot( aes(x = Metadata_Treatment, y = Mean_Nuclei, col = Metadata_Stiffness))+
   #facet_grid(cols = vars(Metadata_Stiffness))+
   geom_path(aes(group = Metadata_Stiffness), linewidth = 1.5)+
   geom_point()+
   theme_prism(border = TRUE)+
   xlab("Sorafenib Treatment")+
   ylab("Average Cell Number")+
-  scale_color_manual(values  = c("darkorange", "blue" ))
+  scale_color_manual(values = c("#db6d22", "#2100bb"))
 ```
 ### FOC Full Treatment Range
 ```{r}
@@ -129,6 +129,23 @@ FOC %>% filter(Metadata_Treatment == "20 uM")%>% group_by(Condition, Metadata_Tr
   theme(legend.position = "none")
 ggsave("FOCScatterlog20.png", dpi = 1200)
 ```
+## Need to  Figure out Survival
+```{r}
+FOCsumm <- FOC %>% group_by(Abb_ECMs, Metadata_Stiffness, Metadata_Treatment, CollagenI,CollagenIV, Laminin, Hyaluronic_Acid,   TenascinC, Osteopontin, Galectin3, Fibronectin, Decorin, Conditions)%>% dplyr::summarize(FOC = mean(FOC), ControlMean = mean(ControlMean))
+```
+"C1:DN"  "C1:HA"  "C4:FN"  "C4:G3"  "C4:LN"  "C4:OPN" "G3:FN"  "HA:DN"  "HA:FN"  "LN:DN"  "LN:FN"  "LN:G3"  "OPN:G3" Maintained
+
+```{r}
+FOCDecreased <- subset(FOCsumm, FOC < 0.25)
+FOCMaintained <- subset(FOCsumm, 0.75<FOC & FOC<1.25)
+
+FOCMaintained <- subset(FOCMaintained, Metadata_Treatment != "DMSO")
+
+
+hist(subset(FOCsumm, Metadata_Treatment != "DMSO")$FOC, breaks = 30)
+
+```
+
 
 Calculating Numbers for Dots (If Needed)
 ## 10 uM over both stiffnesses
@@ -268,7 +285,7 @@ ggsave("TCTreatECM.png")
 ```{r}
 heatmapFOC <- FOC[,c("Abb_ECMs", "Metadata_Slide", "Metadata_Experiment", "Metadata_Ratio", "Metadata_Stiffness", "Metadata_Treatment", "FOC")]
 
-heatmapFOC <- heatmapFOC %>%filter(Metadata_Treatment != "DMSO")%>% group_by(Abb_ECMs, Metadata_Stiffness, Metadata_Treatment, Metadata_Ratio)%>%summarize(Mean_FOC = mean(FOC), .groups = "drop")
+heatmapFOC <- heatmapFOC %>%filter(Metadata_Treatment != "DMSO")%>% group_by(Abb_ECMs, Metadata_Stiffness, Metadata_Treatment, Metadata_Ratio)%>%dplyr::summarize(Mean_FOC = mean(FOC), .groups = "drop")
 
 heatmapFOC <- heatmapFOC %>% mutate(TreatStiffness = paste(Metadata_Treatment, Metadata_Stiffness), Microenvironment = paste0(Abb_ECMs, Metadata_Ratio))
 
@@ -482,12 +499,12 @@ FOCsumm %>% filter(Metadata_Treatment != "DMSO") %>%filter(FOC < 1 & FOC > 0.5) 
 ## Violin Plot FOC 
 ```{r}
 
-FOCMeans <- FOC %>% group_by(Metadata_Stiffness, Conditions, Metadata_Treatment) %>% summarize(FOC = mean(FOC), .groups = "drop")
+FOCMeans <- FOC %>% group_by(Metadata_Stiffness, Conditions, Metadata_Treatment) %>% dplyr::summarize(FOC = mean(FOC), .groups = "drop")
 
 FOCCM <-  compare_means(FOC ~ Metadata_Stiffness, subset(FOC, Metadata_Treatment != "DMSO"), group.by = "Metadata_Treatment")
 
   ggplot()+
-  facet_grid(cols = vars(Metadata_Treatment))+
+   facet_grid(cols = vars(Metadata_Treatment))+
   geom_violin(data = subset(FOC, Metadata_Treatment != "DMSO"),aes(x = Metadata_Stiffness, y = FOC)) + 
   geom_point(data = subset(FOCMeans, Metadata_Treatment != "DMSO"), aes(x = Metadata_Stiffness, y = FOC, group = Conditions), position = position_jitter(width = 0.2))+
  # scale_y_log10()+
@@ -536,5 +553,76 @@ ggplot(data = subset(FOC, Metadata_ECMs == "Collagen ILaminin" & Metadata_Treatm
        x = "ECM Ratio",
        y = "Fold Change from DMSO")
   ggsave(file = "TCFN.png", width = 5, height = 5)
+```
+## Ratio Paths
+```{r}
+RatioCol1 <- FOC %>% group_by(CollagenI, Metadata_Treatment)%>% summarize(EdU = mean(Mean_Percent_Positive), FOC = mean(FOC), ECMRatio = "Collagen I")%>% rename("Ratio" = "CollagenI")
+
+RatioCol4<- FOC %>% group_by(CollagenIV, Metadata_Treatment)%>% summarize(EdU = mean(Mean_Percent_Positive), FOC = mean(FOC), ECMRatio = "Collagen IV")%>% rename("Ratio" = "CollagenIV")
+
+RatioHA<- FOC %>% group_by(Hyaluronic_Acid, Metadata_Treatment)%>% summarize(EdU = mean(Mean_Percent_Positive), FOC = mean(FOC), ECMRatio = "Hyaluronic Acid")%>% rename("Ratio" = "Hyaluronic_Acid")
+
+RatioTC<- FOC %>% group_by(TenascinC, Metadata_Treatment)%>% summarize(EdU = mean(Mean_Percent_Positive), FOC = mean(FOC), ECMRatio = "Tenascin C")%>% rename("Ratio" = "TenascinC")
+
+RatioOPN<- FOC %>% group_by(Osteopontin, Metadata_Treatment)%>% summarize(EdU = mean(Mean_Percent_Positive), FOC = mean(FOC), ECMRatio = "Osteopontin")%>% rename("Ratio" = "Osteopontin")
+
+RatioG3<- FOC %>% group_by(Galectin3, Metadata_Treatment)%>% summarize(EdU = mean(Mean_Percent_Positive), FOC = mean(FOC), ECMRatio = "Galectin 3")%>% rename("Ratio" = "Galectin3")
+
+RatioFN<- FOC %>% group_by(Fibronectin, Metadata_Treatment)%>% summarize(EdU = mean(Mean_Percent_Positive), FOC = mean(FOC), ECMRatio = "Fibronectin")%>% rename("Ratio" = "Fibronectin")
+
+RatioLN<- FOC %>% group_by(Laminin, Metadata_Treatment)%>% summarize(EdU = mean(Mean_Percent_Positive), FOC = mean(FOC), ECMRatio = "Laminin")%>% rename("Ratio" = "Laminin")
+
+RatioDN <- FOC %>% group_by(Decorin, Metadata_Treatment)%>% summarize(EdU = mean(Mean_Percent_Positive), FOC = mean(FOC), ECMRatio = "Decorin")%>% rename("Ratio" = "Decorin")
+
+RatioForInt <- rbind(RatioCol1, RatioCol4, RatioHA, RatioTC, RatioOPN, RatioG3, RatioFN, RatioLN, RatioDN)
+```
+
+```{r}
+# RatioForInt %>% filter(Metadata_Treatment == "DMSO") %>% filter(ECMRatio %in% c("Osteopontin", "Hyaluronic Acid", "Laminin", "CollagenI"))%>%ggplot( aes(x = Ratio, y = EdU, col = ECMRatio))+
+#   geom_path(aes(group = ECMRatio), linewidth = 1.5)+
+#   geom_point(size = 3)+
+#   theme_prism(border = TRUE)+
+#   xlab("Ratio of ECM")+
+#   ylab("Proliferation in DMSO")
+# 
+# RatioForInt %>% filter(Metadata_Treatment == "10 uM") %>% filter(ECMRatio %in% c("Osteopontin", "Hyaluronic Acid", "Laminin", "CollagenI"))%>%ggplot( aes(x = Ratio, y = EdU, col = ECMRatio))+
+#   geom_path(aes(group = ECMRatio), linewidth = 1.5)+
+#   geom_point(size = 3)+
+#   theme_prism(border = TRUE)+
+#   xlab("Ratio of ECM")+
+#   ylab("Proliferation in 10 uM")
+
+
+
+# RatioForInt %>% filter(Metadata_Treatment == "20 uM")%>% filter(ECMRatio %in% c("Osteopontin", "Hyaluronic Acid", "Laminin", "CollagenI"))%>%ggplot( aes(x = Ratio, y = EdU, col = ECMRatio))+
+#   geom_path(aes(group = ECMRatio), linewidth = 1.5)+
+#   geom_point(size = 3)+
+#   theme_prism(border = TRUE)+
+#   xlab("Ratio of ECM")+
+#   ylab("Proliferation in 20 uM")
+
+RatioForInt %>% filter(Metadata_Treatment == "10 uM")%>% filter(ECMRatio %in% c( "Laminin", "Fibronectin"))%>%ggplot( aes(x = Ratio, y = FOC, col = ECMRatio))+
+  geom_path(aes(group = ECMRatio), linewidth = 1.5)+
+  geom_point(size = 3)+
+  theme_prism(border = TRUE)+
+  xlab("Ratio of ECM")+
+  ylab("Survival in 10 uM")
+
+RatioForInt %>% filter(Metadata_Treatment == "20 uM")%>% filter(ECMRatio %in% c( "Laminin", "Fibronectin", "Osteopontin"))%>%ggplot( aes(x = Ratio, y = FOC, col = ECMRatio))+
+  geom_path(aes(group = ECMRatio), linewidth = 1.5)+
+  geom_point(size = 3)+
+  theme_prism(border = TRUE)+
+  xlab("Ratio of ECM")+
+  ylab("Survival in 20 uM")
+
+```
+
+## Compare Means FOC
+```{r}
+FOCECMRatio10uM <- compare_means(FOC ~ Metadata_Ratio, data = subset(FOC, Metadata_Treatment == "10 uM"), group.by = c("Metadata_Stiffness", "Abb_ECMs"))
+FOCECMRatio20uM <- compare_means(FOC ~ Metadata_Ratio, data = subset(FOC, Metadata_Treatment == "20 uM"), group.by = c("Metadata_Stiffness", "Abb_ECMs"))
+
+FOCECMRatio10uMsig <- subset(FOCECMRatio10uM, p.signif != "ns")
+FOCECMRatio20uMsig <- subset(FOCECMRatio20uM, p.signif != "ns")
 ```
 

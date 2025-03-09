@@ -1,0 +1,69 @@
+---
+title: "Finding Rep Images"
+output: html_document
+date: "2025-03-09"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Library Loading
+```{r}
+library(ggpubr)
+library(ggplot2)
+library(ggprism)
+library(dplyr)
+library(NatParksPalettes)
+```
+
+## Compare Means
+```{r}
+ECMStiffFOCCM <- compare_means(FOC~Abb_ECMs, data = subset(FOC, Metadata_Treatment != "DMSO"), group.by = c("Metadata_Stiffness", "Metadata_Treatment"))
+
+ECMStiffEdUCM <- compare_means(Mean_Percent_Positive~Abb_ECMs, data = subset(FOC, Metadata_Treatment == "DMSO"), group.by = c("Metadata_Stiffness"))
+
+ECMEdUCM <- compare_means(Mean_Percent_Positive~Abb_ECMs, data = FOC, group.by = c("Metadata_Treatment"))
+
+StiffECMEdUCM <- compare_means(Mean_Percent_Positive~Metadata_Stiffness, data = subset(FOC, Metadata_Treatment == "DMSO"), group.by = c("Abb_ECMs"))
+
+ECMStiffFOCCMsig <- subset(ECMStiffFOCCM, p.signif != "ns")
+ECMEdUCMsig <- subset(ECMEdUCM, p.signif != "ns")
+ECMStiffEdUCMsig <- subset(ECMStiffEdUCM, p.signif != "ns")
+
+# StiffECMCM <- compare_means(Mean_Object_Count~Metadata_Stiffness, data = subset(dswithrep, Metadata_Time == "Day 0"), group.by = "Abb_ECM")
+# 
+# StiffECMCMSig <- subset(StiffECMCM, p.signif != "ns")
+```
+
+```{r}
+FOC%>% filter(Metadata_Treatment == "DMSO" & Abb_ECMs == "C1:LN") %>% group_by(Metadata_Stiffness)%>% summarize(mean = mean(Mean_Percent_Positive))
+
+FOC%>% filter(Metadata_Treatment == "DMSO" & Abb_ECMs == "C4:OPN") %>% group_by(Metadata_Stiffness)%>% summarize(mean = mean(Mean_Percent_Positive))
+```
+
+
+## Graphs
+```{r}
+
+dswithrep %>% filter(Abb_ECM == "C1TC" | Abb_ECM == "C1C4")%>%group_by(Metadata_Stiffness, Metadata_Time)%>%ggplot(aes(x = Metadata_Stiffness, y = Mean_Object_Count, color = Abb_ECM))+
+  facet_grid(cols = vars(Metadata_Time))+
+  geom_boxplot()+
+  theme_prism()+
+  stat_compare_means(label = "p.signif", size = 6, label.y = 400)+
+  xlab("Stiffness (kPa)")+
+  ylab("Mean Cell Adhesion")+
+  scale_color_manual(values = c("#FEB359", "#132F5B"))+
+  ggtitle("Collagen I with Collagen IV or Tenascin C")
+  
+dswithrep %>% filter(Abb_ECM == "C1TC" | Abb_ECM == "C1C4")%>%group_by(Metadata_Stiffness, Metadata_Time)%>%ggplot(aes(x = Metadata_Stiffness, y = Mean_Object_Count, fill = Abb_ECM))+
+  facet_grid(cols = vars(Metadata_Time))+
+  geom_boxplot()+
+  theme_prism()+
+  stat_compare_means(label = "p.signif", size = 6, label.y = 400)+
+  xlab("Stiffness (kPa)")+
+  ylab("Mean Cell Adhesion")+
+  scale_fill_manual(values = c("#FEB359", "#132F5B"))+
+  ggtitle("Collagen I with Collagen IV or Tenascin C")
+
+```
