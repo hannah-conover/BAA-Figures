@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(ggpubr)
 library(ggplot2)
 library(ggprism)
+library(plyr)
 library(dplyr)
 library(NatParksPalettes)
 ```
@@ -21,7 +22,7 @@ library(NatParksPalettes)
 ```{r}
 ECMStiffFOCCM <- compare_means(FOC~Abb_ECMs, data = subset(FOC, Metadata_Treatment != "DMSO"), group.by = c("Metadata_Stiffness", "Metadata_Treatment"))
 
-ECMStiffEdUCM <- compare_means(Mean_Percent_Positive~Abb_ECMs, data = subset(FOC, Metadata_Treatment == "DMSO"), group.by = c("Metadata_Stiffness"))
+ECMStiffEdUCM <- compare_means(Mean_Percent_Positive~Abb_ECMs, data = subset(FOC, Metadata_Treatment == "20 uM"), group.by = c("Metadata_Stiffness"))
 
 ECMEdUCM <- compare_means(Mean_Percent_Positive~Abb_ECMs, data = FOC, group.by = c("Metadata_Treatment"))
 
@@ -40,30 +41,134 @@ ECMStiffEdUCMsig <- subset(ECMStiffEdUCM, p.signif != "ns")
 FOC%>% filter(Metadata_Treatment == "DMSO" & Abb_ECMs == "C1:LN") %>% group_by(Metadata_Stiffness)%>% summarize(mean = mean(Mean_Percent_Positive))
 
 FOC%>% filter(Metadata_Treatment == "DMSO" & Abb_ECMs == "C4:OPN") %>% group_by(Metadata_Stiffness)%>% summarize(mean = mean(Mean_Percent_Positive))
+
+FOC %>% filter(Metadata_Treatment == "DMSO") %>% filter(Abb_ECMs == "C1:C4" | Abb_ECMs == "C4:TC")%>% group_by(Metadata_Stiffness, Abb_ECMs)%>% dplyr::summarize(mean = mean(Mean_Percent_Positive))
+
+FOC %>% filter(Metadata_Treatment == "DMSO") %>% group_by(Metadata_Stiffness, Abb_ECMs)%>% dplyr::summarize(mean = mean(Mean_Nuclei), meanPos = mean(Mean_Percent_Positive)) %>% dplyr::filter(grepl('C1|C4', Abb_ECMs))
 ```
 
+## EdU Rep Images Trial
+```{r}
+library(ggpubr)
+EDUECMTREAT <- compare_means(Mean_Percent_Positive ~ Metadata_Treatment, data = dswithrepAbbECM, group.by=(c("Metadata_Stiffness", "Abb_ECMs")))
+EDUECMTREATsig <- subset(EDUECMTREAT, p.signif != "ns")
+```
 
 ## Graphs
 ```{r}
 
-dswithrep %>% filter(Abb_ECM == "C1TC" | Abb_ECM == "C1C4")%>%group_by(Metadata_Stiffness, Metadata_Time)%>%ggplot(aes(x = Metadata_Stiffness, y = Mean_Object_Count, color = Abb_ECM))+
-  facet_grid(cols = vars(Metadata_Time))+
+dswithrepAbbECM %>% filter(Abb_ECMs == "C4LN" | Abb_ECMs == "C4TC")%>% group_by(Metadata_Stiffness, Metadata_Treatment)%>%ggplot(aes(x = Metadata_Treatment, y = Mean_Percent_Positive, fill = Abb_ECMs))+
+  facet_grid(cols = vars(Metadata_Stiffness))+
   geom_boxplot()+
   theme_prism()+
-  stat_compare_means(label = "p.signif", size = 6, label.y = 400)+
-  xlab("Stiffness (kPa)")+
-  ylab("Mean Cell Adhesion")+
-  scale_color_manual(values = c("#FEB359", "#132F5B"))+
-  ggtitle("Collagen I with Collagen IV or Tenascin C")
-  
-dswithrep %>% filter(Abb_ECM == "C1TC" | Abb_ECM == "C1C4")%>%group_by(Metadata_Stiffness, Metadata_Time)%>%ggplot(aes(x = Metadata_Stiffness, y = Mean_Object_Count, fill = Abb_ECM))+
-  facet_grid(cols = vars(Metadata_Time))+
-  geom_boxplot()+
-  theme_prism()+
-  stat_compare_means(label = "p.signif", size = 6, label.y = 400)+
-  xlab("Stiffness (kPa)")+
-  ylab("Mean Cell Adhesion")+
-  scale_fill_manual(values = c("#FEB359", "#132F5B"))+
-  ggtitle("Collagen I with Collagen IV or Tenascin C")
+  stat_compare_means(comparisons = list(c("DMSO", "10 uM"), c("DMSO", "20 uM"), c("10 uM", "20 uM")),label = "p.signif", size = 6, hide.ns = TRUE, vjust = 0.5 )+
+  #stat_compare_means(label = "p.signif", size = 6, hide.ns = TRUE, vjust = 0.5 )+
+  scale_x_discrete(labels = treatment_labels)+
+  xlab("Sorafenib Dosage")+
+  ylab("Mean % EdU Positive")+
+  scale_fill_manual(values = c("#435F90", "#B47E83"))+
+  ggtitle("C4:LN vs C4:TC")
+  ggsave("EdUExamplec4LNC4TC.png", dpi = 1200)
+
 
 ```
+
+
+
+```{r}
+
+FOC %>% filter(Abb_ECMs == "C4:HA"|Abb_ECMs == "C4"|Abb_ECMs == "C4:TC")%>% filter(Metadata_Treatment == "20 uM") %>% group_by(Metadata_Stiffness)%>%ggplot(aes(x = Metadata_Stiffness, y = FOC, fill = Abb_ECMs))+
+  facet_grid(cols = vars(Metadata_Stiffness), rows = vars(Metadata_Treatment))+
+  geom_boxplot()+
+  theme_prism()+
+   # stat_compare_means(comparisons = list(c("0.25", "0.5"), c("0.5", "0.75"), c("0.25", "0.75")),label = "p.signif", size = 6, hide.ns = TRUE, vjust = 0.5 )+
+  stat_compare_means(label = "p.signif", size = 6, hide.ns = TRUE, vjust = 0.5 )+
+  xlab("Sorafenib Dosage")+
+  ylab("Mean % EdU Positive")+
+ # scale_fill_manual(values = c("#435F90", "#B47E83"))+
+  ggtitle("C4:LN vs C4:TC")
+#  ggsave("EdUExamplec4LNC4TC.png", dpi = 1200)
+
+
+```
+
+```{r}
+
+treatment_labels <- c("DMSO" = "DMSO",
+                      "10 uM" = "10 \u03bcM",
+                      "20 uM" = "20 \u03bcM")
+
+FOC %>% filter(Abb_ECMs == "C4:LN")%>% filter(Metadata_Treatment == "20 uM")%>%filter(Metadata_Stiffness == "1kPa") %>% group_by(Metadata_Stiffness)%>% ggplot(aes(x = as.factor(Laminin), y = FOC, fill = Abb_ECMs))+
+  facet_grid(cols = vars(Metadata_Treatment), rows = vars(Metadata_Stiffness))+
+  geom_boxplot()+
+  theme_prism(border = TRUE)+
+   stat_compare_means(comparisons = list(c("0.25", "0.5"), c("0.5", "0.75"), c("0.25", "0.75")),label = "p.signif", size = 6, hide.ns = TRUE, vjust = 0.5 )+
+  xlab("Ratio of Laminin")+
+  ylab("Fold Change from DMSO")+
+  scale_fill_manual(values = c("#fa7152"))+
+  ggtitle("Survival on C4:LN Islands\n20 uM 1 kPa")
+ggsave("20uMC4LNFOC.png")
+
+FOC %>% filter(Abb_ECMs == "C4:TC")%>% filter(Metadata_Treatment == "10 uM")%>% filter(Metadata_Stiffness == "1kPa") %>% group_by(Metadata_Stiffness)%>%ggplot(aes(x = as.factor(TenascinC), y = FOC, fill = Abb_ECMs))+
+ facet_grid(cols = vars(Metadata_Treatment), rows = vars(Metadata_Stiffness), labeller = labeller(Metadata_Treatment = treatment_labels))+
+  geom_boxplot()+
+  theme_prism(border = TRUE)+
+   stat_compare_means(comparisons = list(c("0.25", "0.5"), c("0.5", "0.75"), c("0.25", "0.75")),label = "p.signif", size = 6, hide.ns = TRUE, vjust = 0.5 )+
+  # stat_compare_means(label = "p.signif", size = 6, hide.ns = TRUE, vjust = 0.5 )+
+  xlab("Ratio of Tenascin C")+
+  ylab("Fold Change from DMSO")+
+  theme(legend.position = "none")+
+  scale_fill_manual(values = c("#0f99ca"))+
+  ggtitle("Survival on C4:TC Islands\n10 \u03bcM 1 kPa")
+ggsave("10uMC4TCFOC.png", dpi =1200, width = 4, height = 4)
+
+FOC %>% filter(Abb_ECMs =="C1:FN"|Abb_ECMs =="C1:OPN"|Abb_ECMs == "C1") %>% filter(Metadata_Treatment != "DMSO")%>% group_by(Metadata_Stiffness, Metadata_Treatment)%>%ggplot(aes(x = Abb_ECMs, y = FOC, fill = Metadata_Treatment))+
+  facet_grid(cols = vars(Metadata_Stiffness), rows = vars(Metadata_Treatment))+
+  geom_boxplot()+
+  theme_prism()+
+   stat_compare_means(comparisons = list(c("C1:FN", "C1:OPN"), c("C1:FN", "C1"), c("C1", "C1:OPN")),label = "p.signif", size = 6, hide.ns = TRUE, vjust = 0.5,label.y = c(1.5,2,2.5) )+
+  # stat_compare_means(label = "p.signif", size = 6, hide.ns = TRUE, vjust = 0.5 )+
+  xlab("Sorafenib Dosage")+
+  ylab("Mean % EdU Positive")+
+ # scale_fill_manual(values = c("#435F90", "#B47E83"))+
+  ggtitle("C4:LN vs C4:TC")
+
+FOC %>% filter(Abb_ECMs =="C1:FN"|Abb_ECMs =="C1:OPN"|Abb_ECMs == "C1"| Abb_ECMs == "TC:HA"| Abb_ECMs == "HA:FN"| Abb_ECMs == "C1:HA"| Abb_ECMs == "C1:C4")%>%filter(Metadata_Treatment == "20 uM") %>% group_by(Metadata_Stiffness, Metadata_Treatment)%>% ggplot(aes(x = Abb_ECMs, y = FOC, fill = Abb_ECMs))+
+  facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_boxplot()+
+  theme_prism(border = TRUE)+
+   stat_compare_means(comparisons = list(c("C1", "C1:C4"), c("C1:FN", "C1:OPN"), c("C1:FN", "C1"), c("C1", "C1:OPN"), c("TC:HA", "C1:OPN"), c("HA:FN", "C1:FN"), c("TC:HA", "HA:FN")),label = "p.signif", size = 6, hide.ns = TRUE, vjust = 0.5, label.y = c(1,1.25, 1.5, 1.75,2,2.25,2.5))+
+  # stat_compare_means(comparisons = list(c("Low", "Mid"), c("Low", "High"), c("Mid", "High")),label = "p.signif", size = 6, hide.ns = TRUE, vjust = 0.5)+
+  xlab("ECM Composition")+
+  ylab("Fold Change from DMSO")+
+  scale_fill_manual(values = natparks.pals("Yellowstone", 7))+
+  theme(axis.text.x = element_text(angle = 45))+
+  ggtitle("Survival Amongst ECM Compositions\n20 uM")
+ggsave("7ECMCompFOC.png", dpi =1200)
+
+FOC %>% filter(Abb_ECMs == "C1"| Abb_ECMs == "TC:HA"| Abb_ECMs == "HA:FN"| Abb_ECMs == "C1:HA")%>%filter(Metadata_Treatment == "20 uM") %>% group_by(Metadata_Stiffness, Metadata_Treatment)%>% ggplot(aes(x = Abb_ECMs, y = FOC, fill = Abb_ECMs))+
+  facet_grid(cols = vars(Metadata_Stiffness))+
+  geom_boxplot()+
+  theme_prism(border = TRUE)+
+   stat_compare_means(comparisons = list( c("C1", "TC:HA"), c("HA:FN", "C1"), c("C1", "C1:HA"), c("TC:HA", "C1:HA"), c("HA:FN", "C1:HA"), c("TC:HA", "HA:FN")),label = "p.signif", size = 6, hide.ns = TRUE, vjust = 0.5, label.y = c(1,1.25, 1.5, 1.75,2, 2.25))+
+  # stat_compare_means(comparisons = list(c("Low", "Mid"), c("Low", "High"), c("Mid", "High")),label = "p.signif", size = 6, hide.ns = TRUE, vjust = 0.5)+
+  xlab("ECM Composition")+
+  ylab("Fold Change from DMSO")+
+  scale_fill_manual(values = natparks.pals("Cuyahoga", 4))+
+  theme(axis.text.x = element_text(angle = 45))+
+  ggtitle("Survival Amongst ECM Compositions\n20 \u03bcM")
+ggsave("4ECMCompFOC.png", dpi =1200)
+
+FOC %>% filter(Abb_ECMs == "C4:HA"|Abb_ECMs =="C4")%>% filter(Metadata_Treatment == "20 uM") %>% group_by(Metadata_Stiffness)%>%ggplot(aes(x = Metadata_Stiffness, y = FOC, fill = Abb_ECMs))+
+  #facet_grid(cols = vars(Metadata_Stiffness), rows = vars(Metadata_Treatment))+
+  geom_boxplot()+
+  theme_prism()+
+   # stat_compare_means(comparisons = list(c("0.25", "0.5"), c("0.5", "0.75"), c("0.25", "0.75")),label = "p.signif", size = 6, hide.ns = TRUE, vjust = 0.5 )+
+  stat_compare_means(label = "p.signif", size = 6, hide.ns = TRUE, vjust = 0.5 )+
+  xlab("Sorafenib Dosage")+
+  ylab("Mean % EdU Positive")+
+  scale_fill_manual(values = c("#435F90", "#B47E83"))+
+  ggtitle("C4:LN vs C4:TC")
+#  ggsave("EdUExamplec4LNC4TC.png", dpi = 1200)
+```
+

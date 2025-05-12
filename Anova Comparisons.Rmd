@@ -164,12 +164,15 @@ survivalforcomplong$Terms <- factor(survivalforcomplong$Terms, levels = term_ord
 ```
 
 ```{r}
-survivalforcomplong %>% filter(Responses != "10uMSurvival")%>%ggplot(aes(x = Terms, y = Value, fill = Responses))+
-  facet_grid(cols = vars(Responses))+
+response_labels <- c("Adhesion" = "Adhesion",
+                     "10uMSurvival" = "10\u03bcMSurvival",
+                     "20uMSurvival" = "20\u03bcMSurvival")
+survivalforcomplong %>%ggplot(aes(x = Terms, y = Value, fill = Responses))+
+  facet_grid(cols = vars(Responses), labeller = labeller(Responses = response_labels))+
   geom_col(position = "dodge", color = "white")+
   theme_prism()+
   coord_flip()+
-  scale_fill_manual(values = c("Adhesion" = "#FDE725FF", "10uMSurvival" = "#2A788Eff", "20uMSurvival" = "#414487FF"))+
+  scale_fill_manual(values = c("Adhesion" = "#FDE725FF", "10uMSurvival" = "#2A788Eff", "20uMSurvival" = "#414487FF"), labels = response_labels)+
   ylab("Significance (*s)")+
  #scale_x_discrete(limits = rev)+
   theme(axis.text.y = element_text(size = 10),

@@ -52,15 +52,23 @@ dswithrepAbbECM %>% ggplot(aes(Metadata_Treatment, Mean_Nuclei)) +
   ylab("Average Adhesion")+
   stat_compare_means(comparisons = treatmentcomp, label = "p.signif")
 
+treatment_labels <- c("DMSO" = "DMSO",
+                      "10 uM" = "10 \u03bcM",
+                      "20 uM" = "20 \u03bcM")
+
 dswithrepAbbECM %>% ggplot(aes(Metadata_Stiffness, Mean_Nuclei, fill = Metadata_Stiffness)) +
-  facet_grid(cols = vars(Metadata_Treatment))+
+  facet_grid(cols = vars(Metadata_Treatment),labeller = labeller(Metadata_Treatment = treatment_labels))+
   geom_boxplot()+
   theme_prism()+
-  xlab("Stiffness")+
-  ylab("Average Adhesion")+
+  xlab("Stiffness (kPa)")+
+  ylab("Average Cell Count")+
+  ggtitle("Cell Number Amongst Stiffness and Treatment")+
   scale_fill_manual(values = c("#db6d22", "#2100bb"))+
-  stat_compare_means(comparisons = list(c("1kPa", "25kPa")), label = "p.signif", size =7, vjust = 0.5)
+ stat_compare_means(comparisons = list(c("1kPa", "25kPa")), label = "p.signif", size =7, vjust = 0.5)
 ggsave("StiffnessbyTreatmentinSur.png")
+
+
+
 ```
 
 ```{r}
@@ -89,7 +97,7 @@ ggsave("FOCScatter.png", dpi = 1200)
 
 FOC %>% filter(Metadata_Treatment != "DMSO")%>% group_by(Condition, Metadata_Treatment, Metadata_Stiffness)%>% #summarize(ControlMean = mean(ControlMean), FOC = mean(FOC)) %>% 
   ggplot(aes(ControlMean, FOC, color = Condition))+
-  facet_grid(cols = vars(Metadata_Treatment), rows = vars(Metadata_Stiffness)) + 
+  facet_grid(cols = vars(Metadata_Treatment), rows = vars(Metadata_Stiffness), labeller = labeller(Metadata_Treatment = treatment_labels)) + 
   geom_point()+
   scale_y_log10()+
   ylab("Drug/DMSO Control (Survival)")+
@@ -216,15 +224,17 @@ ggsave("FOCTreat.png", height = 3.5, width = 7)
 FOC$Metadata_Treatment <- factor(FOC$Metadata_Treatment, levels = c("DMSO", "10 uM", "20 uM"))
 
 FOC %>% ggplot(aes(x = Metadata_Stiffness, y = FOC, fill = Metadata_Stiffness)) + 
-  facet_grid(cols = vars(Metadata_Treatment))+
+  facet_grid(cols = vars(Metadata_Treatment), labeller = labeller(Metadata_Treatment = treatment_labels))+
   geom_boxplot()+
   theme_prism()+
  stat_compare_means(comparisons = list(c("1kPa", "25kPa")),label = "p.signif", size = 7, hide.ns = TRUE, vjust = 0.5)+
   scale_fill_manual(values = c("#db6d22", "#2100bb"))+
+  # scale_y_log10()+
    xlab("Stiffness (kPa)")+
-  ylab("Fraction of DMSO Control")
+  ylab("Fold Change from DMSO")+
+  ggtitle("Survival Amongst Stiffness and Treatment ")
  # stat_summary(fun = "mean", color = "red", pch = 8)
-ggsave("FOCTreatStiff.png", height = 5, width = 10)
+ggsave("FOCTreatStiff.png", dpi =1200 )
 ```
 
 ## Interaction Plots
@@ -491,9 +501,9 @@ ggsave("StiffECMHAFOC10.png")
 ## Dot Plot Math
 ```{r}
 library(dplyr)
-FOC %>%filter(Metadata_Treatment != "DMSO") %>%filter(FOC < 1 & FOC > 0.5) %>% group_by(Metadata_Stiffness, Metadata_Treatment) %>% summarize(length(FOC))
+FOC %>%filter(Metadata_Treatment != "DMSO") %>%filter(FOC < 1 & FOC > 0.5) %>% group_by(Metadata_Stiffness, Metadata_Treatment) %>% dplyr::summarize(length(FOC))
 
-FOCsumm %>% filter(Metadata_Treatment != "DMSO") %>%filter(FOC < 1 & FOC > 0.5) %>% group_by(Metadata_Stiffness, Metadata_Treatment) %>% summarize(length(FOC))
+FOCsumm %>% filter(Metadata_Treatment != "DMSO") %>%filter(FOC < 1 & FOC > 0.5) %>% group_by(Metadata_Stiffness, Metadata_Treatment) %>% dplyr::summarize(length(FOC))
 ```
 
 ## Violin Plot FOC 
@@ -504,21 +514,21 @@ FOCMeans <- FOC %>% group_by(Metadata_Stiffness, Conditions, Metadata_Treatment)
 FOCCM <-  compare_means(FOC ~ Metadata_Stiffness, subset(FOC, Metadata_Treatment != "DMSO"), group.by = "Metadata_Treatment")
 
   ggplot()+
-   facet_grid(cols = vars(Metadata_Treatment))+
+   facet_grid(cols = vars(Metadata_Treatment), labeller = labeller(Metadata_Treatment = treatment_labels))+
   geom_violin(data = subset(FOC, Metadata_Treatment != "DMSO"),aes(x = Metadata_Stiffness, y = FOC)) + 
   geom_point(data = subset(FOCMeans, Metadata_Treatment != "DMSO"), aes(x = Metadata_Stiffness, y = FOC, group = Conditions), position = position_jitter(width = 0.2))+
  # scale_y_log10()+
   theme_prism()+
  theme(axis.text.x = element_text( size = 25),
-        axis.title.x = element_text(size = 25),
+        axis.title.x = element_text(size = 30),
         axis.text.y = element_text(size = 25), 
-        axis.title.y = element_text(size = 25),
+        axis.title.y = element_text(size = 30),
         legend.position = "none",
-        plot.title = element_text(size =25),
+        plot.title = element_text(size =35),
         panel.background = element_blank(),
-        strip.text = element_text(size = 25),
+        strip.text = element_text(size = 30),
         panel.border = element_rect(colour = "black", fill=NA, size=1))+
-    stat_pvalue_manual(FOCCM, y.position = 4, label = "p.signif", label.size = 10)+
+    stat_pvalue_manual(FOCCM, y.position = 4, label = "p.signif", label.size = 15)+
   labs(title = "Fraction of DMSO Control",
        x = "Stiffness (kPa)",
        y = "Fraction of DMSO Control")
@@ -624,5 +634,23 @@ FOCECMRatio20uM <- compare_means(FOC ~ Metadata_Ratio, data = subset(FOC, Metada
 
 FOCECMRatio10uMsig <- subset(FOCECMRatio10uM, p.signif != "ns")
 FOCECMRatio20uMsig <- subset(FOCECMRatio20uM, p.signif != "ns")
+```
+
+```{r}
+compare_means(Mean_Nuclei ~ Metadata_Treatment, data = FOC, group.by = "Metadata_Stiffness")
+compare_means(Mean_Nuclei ~ Metadata_Stiffness, data = FOC, group.by = "Metadata_Treatment")
+compare_means(Mean_Nuclei ~ Metadata_Treatment, data = FOC)
+
+FOC %>% group_by(Metadata_Treatment)%>% dplyr::summarize(mean = mean(Mean_Nuclei))
+FOC %>% group_by(Metadata_Treatment, Metadata_Stiffness)%>% dplyr::summarize(mean = mean(Mean_Nuclei))
+```
+
+```{r}
+compare_means(FOC ~ Metadata_Treatment, data = FOC, group.by = "Metadata_Stiffness")
+compare_means(FOC ~ Metadata_Stiffness, data = FOC, group.by = "Metadata_Treatment")
+compare_means(FOC ~ Metadata_Treatment, data = FOC)
+
+FOC %>% group_by(Metadata_Treatment)%>% dplyr::summarize(mean = mean(FOC))
+FOC %>% group_by(Metadata_Treatment, Metadata_Stiffness)%>% dplyr::summarize(mean = mean(FOC))
 ```
 

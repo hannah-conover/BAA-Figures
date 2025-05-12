@@ -172,7 +172,7 @@ ggsave("G3RatiovsECMEdU.png", width = 10, height = 5)
 
 
 
-#### Significant Stiffness:Treatment:Raio
+#### Significant Stiffness:Treatment:ECMs
 LN, G3
 
 ```{r}
@@ -184,58 +184,60 @@ LN, G3
 # 
 # dswithrepAbbECM %>% filter(Metadata_Stiffness == "25kPa") %>% interaction.plot(Galectin3, Metadata_Treatment, response = Mean_Percent_Positive, xlab = "Ratio of Galectin 3", ylab = "Mean % EdU Positive", trace.label = "Treatment")
 
-EdUECMmeansNuc %>% group_by(Metadata_Treatment, Laminin, Metadata_Stiffness) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Laminin, y = Percent_Positive, col = Metadata_Treatment))+
+EdUECMmeansNuc %>% group_by(Metadata_Treatment, Abb_ECMs, Metadata_Stiffness) %>% dplyr::summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Abb_ECMs, y = Percent_Positive, col = Metadata_Treatment))+
   facet_grid(cols = vars(Metadata_Stiffness))+
   geom_path(aes(group = Metadata_Treatment), linewidth = 1.5)+
   geom_point()+
   theme_prism(border = TRUE)+
-  xlab("Ratio of Laminin")+
+  xlab("ECM Composition")+
   ylab("% Positive EdU")+
   scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" 
 )) +
   ylab("% EdU Positive")
 
-EdUECMmeansNuc %>% group_by(Metadata_Treatment, Laminin, Metadata_Stiffness) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Metadata_Treatment, y = Percent_Positive, col = Laminin ))+
-  facet_grid(cols = vars(Metadata_Stiffness))+
-  geom_path(aes(group = Laminin), linewidth = 1.5)+
-  geom_point()+
-  theme_prism(border = TRUE)+
-  xlab("Treatment")+
-  ylab("% Positive EdU")+
-  scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" 
-)) +
-  ylab("% EdU Positive")
+# EdUECMmeansNuc %>% group_by(Metadata_Treatment, Laminin, Metadata_Stiffness) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Metadata_Treatment, y = Percent_Positive, col = Laminin ))+
+#   facet_grid(cols = vars(Metadata_Stiffness))+
+#   geom_path(aes(group = Laminin), linewidth = 1.5)+
+#   geom_point()+
+#   theme_prism(border = TRUE)+
+#   xlab("Treatment")+
+#   ylab("% Positive EdU")+
+#   scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" 
+# )) +
+#   ylab("% EdU Positive")
+# 
+# EdUECMmeansNuc %>% group_by(Metadata_Treatment, Galectin3, Metadata_Stiffness) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Galectin3, y = Percent_Positive, col = Metadata_Treatment))+
+#   facet_grid(cols = vars(Metadata_Stiffness))+
+#   geom_path(aes(group = Metadata_Treatment), linewidth = 1.5)+
+#   geom_point()+
+#   theme_prism(border = TRUE)+
+#   xlab("Ratio of Galectin3")+
+#   ylab("% Positive EdU")+
+#   scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" 
+# )) +
+#   ylab("% EdU Positive")
 
-EdUECMmeansNuc %>% group_by(Metadata_Treatment, Galectin3, Metadata_Stiffness) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Galectin3, y = Percent_Positive, col = Metadata_Treatment))+
-  facet_grid(cols = vars(Metadata_Stiffness))+
-  geom_path(aes(group = Metadata_Treatment), linewidth = 1.5)+
-  geom_point()+
-  theme_prism(border = TRUE)+
-  xlab("Ratio of Galectin3")+
-  ylab("% Positive EdU")+
-  scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" 
-)) +
-  ylab("% EdU Positive")
-
-EdUECMmeansNuc %>% group_by(Metadata_Treatment, Galectin3, Metadata_Stiffness) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Galectin3, y = Percent_Positive, col = Metadata_Stiffness))+
-  facet_grid(cols = vars(Metadata_Treatment))+
+EdUECMmeansNuc %>% group_by(Metadata_Treatment, Abb_ECMs, Metadata_Stiffness) %>% dplyr:: summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Abb_ECMs, y = Percent_Positive, col = Metadata_Stiffness))+
+  facet_grid(cols = vars(Metadata_Treatment), labeller = labeller(Metadata_Treatment = treatment_labels))+
   geom_path(aes(group = Metadata_Stiffness), linewidth = 1.5)+
   geom_point()+
   theme_prism(border = TRUE)+
-  xlab("Ratio of Galectin3")+
+  xlab("ECM Composition")+
   ylab("% Positive EdU")+
+  theme(axis.text.x = element_blank())+
   scale_color_manual(values = c("#db6d22", "#2100bb"))
+ggsave("EdUStiffTreatECMs.png")
 
-EdUECMmeansNuc %>% group_by(Metadata_Treatment, Galectin3, Metadata_Stiffness) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Metadata_Treatment, y = Percent_Positive, col = Galectin3 ))+
-  facet_grid(cols = vars(Metadata_Stiffness))+
-  geom_path(aes(group = Galectin3), linewidth = 1.5)+
-  geom_point()+
-  theme_prism(border = TRUE)+
-  xlab("Treatment")+
-  ylab("% Positive EdU")+
-  scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" 
-)) +
-  ylab("% EdU Positive")
+# EdUECMmeansNuc %>% group_by(Metadata_Treatment, Galectin3, Metadata_Stiffness) %>% summarize(Percent_Positive = mean(Percent_Positive)) %>%ggplot( aes(x = Metadata_Treatment, y = Percent_Positive, col = Galectin3 ))+
+#   facet_grid(cols = vars(Metadata_Stiffness))+
+#   geom_path(aes(group = Galectin3), linewidth = 1.5)+
+#   geom_point()+
+#   theme_prism(border = TRUE)+
+#   xlab("Treatment")+
+#   ylab("% Positive EdU")+
+#   scale_color_manual(values  = c("#c9462d", "#fa7152","#8dc1e1","#0f99ca","#07709f" 
+# )) +
+#   ylab("% EdU Positive")
 
 ```
 
@@ -462,6 +464,9 @@ dswithrepAbbECM %>% ggplot(aes(Metadata_Stiffness, Mean_Percent_Positive)) +
   stat_compare_means()
 
 treatmentcomp <- list(c("DMSO", "10 uM"), c("DMSO", "20 uM"), c("10 uM", "20 uM"))
+treatment_labels <- c("DMSO" = "DMSO",
+                      "10 uM" = "10 \u03bcM",
+                      "20 uM" = "20 \u03bcM")
 
 dswithrepAbbECM$Metadata_Treatment <- factor(dswithrepAbbECM$Metadata_Treatment, levels = c("DMSO", "10 uM", "20 uM"))
 
@@ -470,9 +475,10 @@ dswithrepAbbECM %>% ggplot(aes(Metadata_Treatment, Mean_Percent_Positive, fill =
   theme_prism()+
   stat_compare_means(label = "p.signif", size = 7, vjust = 0.5)+
   scale_fill_manual(values = c("#db6d22", "#2100bb"))+
+  scale_x_discrete(labels = treatment_labels)+
   xlab("Sorafenib Treatment")+
   ylab("% EdU Positive")
-ggsave("EdUTreatStiffBox.png")
+ggsave("EdUTreatStiffBox.png", dpi = 1200)
 ```
 
 ```{r}
@@ -546,7 +552,7 @@ pheatmap(heatmapEdU, color = colorRampPalette(rev(brewer.pal(n=7, name = "PRGn")
 ```{r}
 library(ggprism)
 dswithrepAbbECM %>% group_by(Metadata_Treatment, Metadata_Stiffness, Conditions) %>% dplyr::summarize(Mean_Nuclei = mean(Mean_Nuclei), Mean_EdU = mean(Mean_Percent_Positive)) %>% ggplot(aes(Mean_Nuclei, Mean_EdU, color = Conditions)) + 
-  facet_grid(cols = vars(Metadata_Treatment), rows = vars(Metadata_Stiffness))+
+  facet_grid(cols = vars(Metadata_Treatment), rows = vars(Metadata_Stiffness), labeller = labeller(Metadata_Treatment = treatment_labels))+
   geom_point()+
   theme_prism(border = TRUE) +
   scale_x_log10()+
