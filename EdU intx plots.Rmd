@@ -557,7 +557,7 @@ dswithrepAbbECM %>% group_by(Metadata_Treatment, Metadata_Stiffness, Conditions)
   theme_prism(border = TRUE) +
   scale_x_log10()+
   theme(legend.position = "none")+
-  xlab("Average Cell Adhesion")+
+  xlab("Average Cell Number")+
   ylab("% EdU Positive")
 ggsave("EdUScatter.png" , dpi = 1200)
   

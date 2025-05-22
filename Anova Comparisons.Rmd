@@ -148,10 +148,10 @@ survivalforcomplong <- survivalforcomplong %>% mutate(Value = case_when(Signific
 survivalforcomplong$Terms <- gsub("Abb_ECMs", "ECMs", survivalforcomplong$Terms)
 survivalforcomplong$Terms <- gsub("Metadata_Stiffness", "Stiffness", survivalforcomplong$Terms)
 
-survivalforcomplong <- survivalforcomplong %>% mutate(Responses = case_when(Response == "Attsig" ~ "Adhesion",
+survivalforcomplong <- survivalforcomplong %>% mutate(Responses = case_when(Response == "Attsig" ~ "CellNumber",
                                                                              Response == "10uMsig" ~ "10uMSurvival",
                                                                              Response == "20uMsig" ~ "20uMSurvival"))
-survivalforcomplong$Responses <- factor(survivalforcomplong$Responses, levels = c("Adhesion", "10uMSurvival", "20uMSurvival"))
+survivalforcomplong$Responses <- factor(survivalforcomplong$Responses, levels = c("CellNumber", "10uMSurvival", "20uMSurvival"))
 ```
 
 
@@ -164,7 +164,7 @@ survivalforcomplong$Terms <- factor(survivalforcomplong$Terms, levels = term_ord
 ```
 
 ```{r}
-response_labels <- c("Adhesion" = "Adhesion",
+response_labels <- c("CellNumber" = "CellNumber",
                      "10uMSurvival" = "10\u03bcMSurvival",
                      "20uMSurvival" = "20\u03bcMSurvival")
 survivalforcomplong %>%ggplot(aes(x = Terms, y = Value, fill = Responses))+
@@ -172,7 +172,7 @@ survivalforcomplong %>%ggplot(aes(x = Terms, y = Value, fill = Responses))+
   geom_col(position = "dodge", color = "white")+
   theme_prism()+
   coord_flip()+
-  scale_fill_manual(values = c("Adhesion" = "#FDE725FF", "10uMSurvival" = "#2A788Eff", "20uMSurvival" = "#414487FF"), labels = response_labels)+
+  scale_fill_manual(values = c("CellNumber" = "#FDE725FF", "10uMSurvival" = "#2A788Eff", "20uMSurvival" = "#414487FF"), labels = response_labels)+
   ylab("Significance (*s)")+
  #scale_x_discrete(limits = rev)+
   theme(axis.text.y = element_text(size = 10),
@@ -212,7 +212,7 @@ Prolforcomplong$Terms <- gsub("Metadata_Stiffness", "Stiffness", Prolforcomplong
 Prolforcomplong$Terms <- gsub("Metadata_Treatment", "Treatment", Prolforcomplong$Terms)
 Prolforcomplong$Terms <- factor(Prolforcomplong$Terms, levels = level_ordertreat)
 
-Prolforcomplong$Response <- gsub("Day2sig", "Adhesion", Prolforcomplong$Response)
+Prolforcomplong$Response <- gsub("Day2sig", "CellNumber", Prolforcomplong$Response)
 Prolforcomplong$Response <- gsub("EdUsig", "Proliferation", Prolforcomplong$Response)
 ```
 
@@ -222,10 +222,12 @@ Prolforcomplong %>% ggplot(aes(x = Terms, y = Value, fill = Response))+
   geom_col(position = "dodge", color = "white")+
   theme_prism()+
   coord_flip()+
-  scale_fill_manual(values = c("Adhesion" = "#FDE725FF", "Proliferation" = "#7AD151ff"))+
+  scale_fill_manual(values = c("CellNumber" = "#FDE725FF", "Proliferation" = "#7AD151ff"))+
   ylab("Significance (*s)")+
   # scale_x_discrete(limits = rev)+
-  theme(axis.text.y = element_text(size = 10))
+  theme(axis.text.y = element_text(size = 10),
+        strip.text.x = element_text(size = 20))
+
 
 ggsave("EdUvvsAdhanovacomp.png", width = 10, height = 10, dpi = 1200)
 ```
